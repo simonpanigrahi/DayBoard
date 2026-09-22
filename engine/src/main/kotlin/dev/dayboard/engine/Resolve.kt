@@ -62,12 +62,19 @@ fun resolve(
         slots.drop(slots.indexOf(current) + 1).filter { !it.closed }
     }
 
+    val startable = when {
+        current != null && !current.started -> current.resolved
+        current != null -> null
+        else -> (upcoming.firstOrNull { !it.started } ?: slots.firstOrNull { !it.started && !it.closed })?.resolved
+    }
+
     val active = current?.toActiveBlock(now)
     val ribbon = ribbon(slots, current, now, zone, extended.date, settings)
     return BoardState(
         clock = ZonedDateTime.ofInstant(now, zone),
         current = active,
         next = upcoming.firstOrNull()?.resolved,
+        startable = startable,
         later = upcoming.drop(1).take(settings.laterCount).map { it.resolved },
         completed = slots.filter { it != current && (it.closed || !it.endAt.isAfter(now)) }
             .map { CompletedBlock(it.resolved, it.actuals, it.endedAt, it.skipped) },

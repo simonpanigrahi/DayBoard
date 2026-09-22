@@ -300,4 +300,38 @@ class ResolveTest {
         assertEquals("Class", state.next?.block?.title)
         assertEquals(t("10:00"), state.next?.start)
     }
+
+    @Test
+    fun `START targets the current block until it is running`() {
+        assertEquals("Email", board("08:10").startable?.block?.title)
+
+        val started = listOf(event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0))
+        assertNull(board("08:10", started, nowElapsed = ELAPSED0 + min(10)).startable)
+    }
+
+    @Test
+    fun `in a gap START targets the next block`() {
+        assertEquals("Class", board("09:30").startable?.block?.title)
+    }
+
+    // Running late is the normal case, not an error: the whole plan being in the past
+    // must not leave the board with nothing to start.
+    @Test
+    fun `after the whole plan has gone by START still targets the first unstarted block`() {
+        val state = board("21:00")
+
+        assertNull(state.current)
+        assertNull(state.next)
+        assertEquals("Email", state.startable?.block?.title)
+    }
+
+    @Test
+    fun `a block already closed is never startable again`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.BLOCK_END, blockId = 1, hhmm = "08:20", elapsedMinutes = 20)
+        )
+
+        assertEquals("Read paper", board("21:00", events, nowElapsed = ELAPSED0 + min(20)).startable?.block?.title)
+    }
 }

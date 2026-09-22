@@ -9,6 +9,12 @@ data class BoardState(
     val clock: ZonedDateTime,
     val current: ActiveBlock?,
     val next: ResolvedBlock?,
+    /**
+     * What a START button should act on: the current block if it has not been started,
+     * otherwise the next one, otherwise the first block never started. Running late is
+     * normal, and the day should still be startable when the clock has moved past it.
+     */
+    val startable: ResolvedBlock?,
     val later: List<ResolvedBlock>,
     val completed: List<CompletedBlock>,
     val dayTotals: DayTotals,
