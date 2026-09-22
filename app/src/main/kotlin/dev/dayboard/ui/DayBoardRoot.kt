@@ -66,7 +66,7 @@ private fun BoardRoute(container: AppContainer, onEdit: () -> Unit, onImport: ()
             onBreak = board::startBreak,
             onEndBreak = board::endBreak,
             onExtend = { board.extend(5) },
-            onDone = board::doneAndAdvance,
+            onDone = board::done,
             onSkip = board::skip,
             onToggleItem = board::toggleItem,
             onEdit = onEdit,

@@ -88,7 +88,8 @@ fun BoardScreen(state: BoardUiState, actions: BoardActions, modifier: Modifier =
                 running = active?.startedAt != null,
                 paused = active?.paused == true,
                 canStart = board.startable != null,
-                canAct = active != null,
+                // Nothing to pause, extend or finish until something is actually running.
+                canAct = active?.startedAt != null,
                 onStart = actions.onStart,
                 onPause = actions.onPause,
                 onResume = actions.onResume,

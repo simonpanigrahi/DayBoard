@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.layout.ResolvedBlock
@@ -35,8 +36,10 @@ fun CurrentBlockCard(
     onToggleItem: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (active == null) {
-        IdleCard(startable, modifier)
+    // A block the schedule has reached but nobody started is not running, and the card
+    // says so rather than counting down time that is not being worked.
+    if (active?.startedAt == null) {
+        ReadyCard(active?.resolved ?: startable, checklist, active?.checkedItemIds.orEmpty(), onToggleItem, modifier)
         return
     }
 
@@ -50,8 +53,7 @@ fun CurrentBlockCard(
             EyebrowRow(
                 label = if (active.paused) "PAUSED" else "NOW",
                 labelColor = if (active.paused) BoardAmber else accent,
-                detail = "${formatClock(active.resolved.start)} – ${formatClock(active.resolved.end)}" +
-                    "   ${active.resolved.minutes} min"
+                detail = window(active.resolved) + doneCount(checklist, active.checkedItemIds)
             )
 
             Spacer(Modifier.weight(0.7f))
@@ -88,37 +90,55 @@ fun CurrentBlockCard(
 }
 
 @Composable
-private fun IdleCard(startable: ResolvedBlock?, modifier: Modifier = Modifier) {
-    val accent = startable?.let { colorFor(it.block.colorRole) } ?: LabelTertiary
-    Panel(modifier, accent = startable?.let { accent }) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+private fun ReadyCard(
+    block: ResolvedBlock?,
+    checklist: List<ChecklistItem>,
+    checkedIds: Set<Long>,
+    onToggleItem: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val accent = block?.let { colorFor(it.block.colorRole) } ?: LabelTertiary
+    Panel(modifier, accent = block?.let { accent }) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             EyebrowRow(
-                label = if (startable == null) "DAY DONE" else "READY",
+                label = if (block == null) "DAY DONE" else "READY",
                 labelColor = accent,
-                detail = startable?.let { "${formatClock(it.start)}   ${it.minutes} min" } ?: ""
+                detail = block?.let { window(it) + doneCount(checklist, checkedIds) }.orEmpty()
             )
+
+            Spacer(Modifier.weight(0.7f))
+
             Text(
-                text = startable?.block?.title ?: "Nothing left to run",
+                text = block?.block?.title ?: "Nothing left to run",
                 style = MaterialTheme.typography.headlineLarge,
-                color = if (startable == null) LabelSecondary else LabelPrimary,
+                color = if (block == null) LabelSecondary else LabelPrimary,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 18.dp)
+                overflow = TextOverflow.Ellipsis
             )
-            if (startable != null) {
+
+            if (block != null) {
                 Text(
                     text = "Press start when you begin",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = LabelSecondary,
-                    modifier = Modifier.padding(top = 10.dp)
+                    style = MaterialTheme.typography.titleMedium,
+                    color = LabelSecondary
                 )
             }
+
+            Spacer(Modifier.weight(1f))
+
+            ChecklistRow(checklist, checkedIds, accent, onToggleItem)
         }
     }
 }
 
+private fun window(block: ResolvedBlock) =
+    "${formatClock(block.start)} – ${formatClock(block.end)}   ${block.minutes} min"
+
+private fun doneCount(checklist: List<ChecklistItem>, checkedIds: Set<Long>) =
+    if (checklist.isEmpty()) "" else "   ${checklist.count { it.id in checkedIds }} of ${checklist.size} done"
+
 @Composable
-private fun EyebrowRow(label: String, labelColor: androidx.compose.ui.graphics.Color, detail: String) {
+private fun EyebrowRow(label: String, labelColor: Color, detail: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.labelLarge, color = labelColor)
         Text(

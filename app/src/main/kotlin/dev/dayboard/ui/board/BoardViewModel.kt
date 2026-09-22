@@ -100,15 +100,13 @@ class BoardViewModel(
 
     fun extend(minutes: Int = 5) = onCurrentBlock(EventType.BLOCK_EXTEND, meta = minutes.toString())
 
-    /** Closes the running block and opens the next one, as two appended facts. */
-    fun doneAndAdvance() {
-        val board = state.value.board ?: return
-        val finished = board.current?.resolved?.block?.id
-        val next = board.next?.block?.id
-        viewModelScope.launch {
-            if (finished != null) events.append(EventType.BLOCK_END, finished)
-            if (next != null) events.append(EventType.BLOCK_START, next)
-        }
+    /**
+     * Closes the running block and stops there. The next block is not started on the
+     * board's say-so: a block runs because it was started, and the log should never
+     * claim work that had not begun.
+     */
+    fun done() {
+        append(EventType.BLOCK_END, currentBlockId ?: return)
     }
 
     fun toggleItem(itemId: Long) {

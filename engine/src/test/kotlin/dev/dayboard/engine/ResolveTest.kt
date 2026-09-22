@@ -418,4 +418,36 @@ class ResolveTest {
         assertEquals(t("18:30"), gym.end)
         assertEquals(60, gym.minutes)
     }
+
+    // Finishing a block must not quietly begin the next one. The board may show it as
+    // the block the schedule is on, but nothing is running until it is started.
+    @Test
+    fun `ending a block leaves the next one waiting to be started`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.BLOCK_END, blockId = 1, hhmm = "08:40", elapsedMinutes = 40)
+        )
+
+        val state = board("08:45", events, nowElapsed = ELAPSED0 + min(45))
+
+        val current = assertNotNull(state.current)
+        assertEquals("Read paper", current.resolved.block.title)
+        assertNull(current.startedAt, "the next block must not be running")
+        assertEquals(0, current.actuals.elapsedMs)
+        assertEquals("Read paper", state.startable?.block?.title)
+    }
+
+    @Test
+    fun `ending a block early leaves the board idle until the next one is started`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.BLOCK_END, blockId = 1, hhmm = "08:10", elapsedMinutes = 10)
+        )
+
+        val state = board("08:15", events, nowElapsed = ELAPSED0 + min(15))
+
+        assertNull(state.current)
+        assertEquals("Read paper", state.startable?.block?.title)
+        assertEquals(min(10), state.completed.single { it.resolved.block.id == 1L }.actuals.focusedMs)
+    }
 }
