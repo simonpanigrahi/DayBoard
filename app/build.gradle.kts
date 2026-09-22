@@ -36,6 +36,15 @@ android {
     }
 }
 
+// The permission test reads the merged manifest, so the manifest is a declared input:
+// with only a dependsOn, editing the manifest alone leaves the test up-to-date and it
+// never re-runs, which is the one way this particular test could fail to protect us.
+tasks.matching { it.name == "testDebugUnitTest" }.configureEach {
+    inputs.files(tasks.named("processDebugMainManifest"))
+        .withPropertyName("mergedManifest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
