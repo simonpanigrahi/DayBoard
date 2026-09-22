@@ -1,11 +1,13 @@
 package dev.dayboard.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.dayboard.AppContainer
@@ -45,6 +47,7 @@ fun DayBoardRoot(container: AppContainer) {
 
 @Composable
 private fun BoardRoute(container: AppContainer, onEdit: () -> Unit) {
+    KeepScreenOn()
     val board: BoardViewModel = viewModel(factory = BoardViewModel.factory(container))
     val state by board.state.collectAsStateWithLifecycle()
 
@@ -101,5 +104,19 @@ private fun EditorRoute(
                 onBack = onLeave
             )
         )
+    }
+}
+
+/**
+ * The board is meant to sit on a stand and stay readable, so the window keeps the
+ * screen on while it is showing. A WAKE_LOCK would need a permission and would outlive
+ * the screen; this flag is scoped to the view and releases itself.
+ */
+@Composable
+private fun KeepScreenOn() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
     }
 }
