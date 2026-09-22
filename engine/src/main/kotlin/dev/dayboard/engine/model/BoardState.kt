@@ -3,6 +3,7 @@ package dev.dayboard.engine.model
 import dev.dayboard.engine.layout.Conflict
 import dev.dayboard.engine.layout.ResolvedBlock
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZonedDateTime
 
 data class BoardState(
@@ -61,10 +62,18 @@ data class DayTotals(
 
 enum class SegmentState { PAST, CURRENT, FUTURE }
 
-/** Fractions are 0..1 across the ribbon window, ready for one Canvas drawRect each. */
+/**
+ * Fractions are 0..1 across the ribbon window, ready for one Canvas drawRect each. The
+ * segment carries its own title and times so the ribbon can answer "what is that block?"
+ * without the UI holding a second copy of the plan.
+ */
 data class RibbonSegment(
     val blockId: Long,
+    val title: String,
     val colorRole: ColorRole,
+    val start: LocalTime,
+    val end: LocalTime,
+    val minutes: Int,
     val startFraction: Float,
     val endFraction: Float,
     val state: SegmentState

@@ -407,4 +407,15 @@ class ResolveTest {
         assertEquals(min(35), current.actuals.focusedMs)
         assertEquals(min(5), current.overrunMs)
     }
+
+    @Test
+    fun `each ribbon segment can name its own block`() {
+        val ribbon = board("10:30").ribbon
+
+        assertEquals(blocks.map { it.title }, ribbon.map { it.title })
+        val gym = ribbon.single { it.title == "Gym" }
+        assertEquals(t("17:30"), gym.start)
+        assertEquals(t("18:30"), gym.end)
+        assertEquals(60, gym.minutes)
+    }
 }

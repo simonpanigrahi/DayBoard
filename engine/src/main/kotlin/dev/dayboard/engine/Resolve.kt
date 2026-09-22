@@ -185,7 +185,11 @@ private fun ribbon(
     val segments = slots.map { slot ->
         RibbonSegment(
             blockId = slot.resolved.block.id,
+            title = slot.resolved.block.title,
             colorRole = slot.resolved.block.colorRole,
+            start = slot.resolved.start,
+            end = slot.resolved.end,
+            minutes = slot.resolved.minutes,
             startFraction = ((slot.resolved.startMinute - windowStart) / span).coerceIn(0f, 1f),
             endFraction = ((slot.resolved.endMinute - windowStart) / span).coerceIn(0f, 1f),
             state = when {
