@@ -74,6 +74,7 @@ fun ImportScreen(
                 modifier = Modifier.padding(start = 10.dp),
                 accent = SystemBlue,
                 height = 76.dp,
+                corner = 14.dp,
                 onClick = {
                     clipboard.setText(AnnotatedString(PLAN_PROMPT))
                     copied = true
@@ -86,6 +87,7 @@ fun ImportScreen(
                 accent = SystemBlue,
                 enabled = text.isNotBlank(),
                 height = 76.dp,
+                corner = 14.dp,
                 onClick = { onParse(text) }
             )
         }
@@ -102,7 +104,7 @@ fun ImportScreen(
                 )
             },
             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = boardFieldColors(),
             modifier = Modifier.fillMaxWidth().weight(1f)
         )

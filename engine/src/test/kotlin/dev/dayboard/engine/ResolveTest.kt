@@ -343,4 +343,68 @@ class ResolveTest {
         assertEquals(23 * 60, window.endMinute)
         assertEquals(1020, window.minutes)
     }
+
+    // Pause has to stop the clock the user is watching. Paused time is still recorded,
+    // as untracked, but a block's countdown measures work done, not wall time occupied.
+    @Test
+    fun `pausing freezes the countdown`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.PAUSE, blockId = 1, hhmm = "08:10", elapsedMinutes = 10)
+        )
+
+        val atPause = board("08:10", events, nowElapsed = ELAPSED0 + min(10))
+        val muchLater = board("08:25", events, nowElapsed = ELAPSED0 + min(25))
+
+        assertEquals(min(20), assertNotNull(atPause.current).remainingMs)
+        assertEquals(min(20), assertNotNull(muchLater.current).remainingMs, "countdown moved while paused")
+        assertTrue(assertNotNull(muchLater.current).paused)
+        // The ledger still tells the truth about where those minutes went.
+        assertEquals(min(15), muchLater.current?.actuals?.untrackedMs)
+        assertEquals(min(25), muchLater.current?.actuals?.elapsedMs)
+    }
+
+    @Test
+    fun `a break freezes the countdown too`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.BREAK_START, blockId = 1, hhmm = "08:05", elapsedMinutes = 5)
+        )
+
+        val state = board("08:20", events, nowElapsed = ELAPSED0 + min(20))
+
+        assertEquals(min(25), assertNotNull(state.current).remainingMs)
+        assertEquals(min(15), state.current?.actuals?.breakMs)
+    }
+
+    @Test
+    fun `resuming starts the countdown again`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.PAUSE, blockId = 1, hhmm = "08:05", elapsedMinutes = 5),
+            event(EventType.RESUME, blockId = 1, hhmm = "08:20", elapsedMinutes = 20)
+        )
+
+        val state = board("08:25", events, nowElapsed = ELAPSED0 + min(25))
+
+        val current = assertNotNull(state.current)
+        assertEquals(min(10), current.actuals.focusedMs)
+        assertEquals(min(20), current.remainingMs)
+        assertEquals(false, current.paused)
+    }
+
+    @Test
+    fun `overrun counts work past the planned length, not time merely occupied`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.PAUSE, blockId = 1, hhmm = "08:20", elapsedMinutes = 20),
+            event(EventType.RESUME, blockId = 1, hhmm = "09:00", elapsedMinutes = 60)
+        )
+
+        val state = board("09:15", events, nowElapsed = ELAPSED0 + min(75))
+
+        val current = assertNotNull(state.current)
+        assertEquals(min(35), current.actuals.focusedMs)
+        assertEquals(min(5), current.overrunMs)
+    }
 }

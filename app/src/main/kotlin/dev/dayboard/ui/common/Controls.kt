@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -114,6 +115,38 @@ fun ActionButton(
     }
 }
 
+/** A square button carrying a drawn glyph and nothing else. */
+@Composable
+fun GlyphButton(
+    modifier: Modifier = Modifier,
+    accent: Color = LabelPrimary,
+    enabled: Boolean = true,
+    size: Dp = 64.dp,
+    corner: Dp = 16.dp,
+    glyph: @Composable (Color) -> Unit,
+    onClick: () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && enabled) 0.94f else 1f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow),
+        label = "press"
+    )
+    Box(
+        modifier
+            .scale(scale)
+            .size(size)
+            .clip(RoundedCornerShape(corner))
+            .background(BoardSurface)
+            .border(Dp.Hairline, BoardHairline, RoundedCornerShape(corner))
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        glyph(if (enabled) accent else LabelTertiary)
+    }
+}
+
 /** Header and navigation: text only, at a comfortable target size. */
 @Composable
 fun GhostButton(
@@ -121,6 +154,7 @@ fun GhostButton(
     modifier: Modifier = Modifier,
     accent: Color = LabelPrimary,
     enabled: Boolean = true,
+    height: Dp = 72.dp,
     onClick: () -> Unit
 ) = ActionButton(
     label = label,
@@ -128,7 +162,7 @@ fun GhostButton(
     tone = Tone.Plain,
     accent = accent,
     enabled = enabled,
-    height = 72.dp,
+    height = height,
     onClick = onClick
 )
 

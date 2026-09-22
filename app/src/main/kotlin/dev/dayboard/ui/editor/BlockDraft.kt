@@ -65,6 +65,19 @@ data class BlockDraft(
             colorRole = defaultColorFor(imported.kind, imported.tag)
         )
 
+        /** Another day's block, taken as a fresh row: no ids, so committing cannot move it. */
+        fun copyFrom(block: Block, items: List<ChecklistItem>) = BlockDraft(
+            key = keys.getAndDecrement(),
+            id = 0,
+            title = block.title,
+            minutes = block.plannedMinutes,
+            kind = block.kind,
+            fixed = block.anchor == Anchor.FIXED,
+            startLocal = block.startLocal,
+            items = items.map { ItemDraft.new().copy(text = it.text) },
+            colorRole = block.colorRole
+        )
+
         fun of(block: Block, items: List<ChecklistItem>) = BlockDraft(
             key = block.id,
             id = block.id,

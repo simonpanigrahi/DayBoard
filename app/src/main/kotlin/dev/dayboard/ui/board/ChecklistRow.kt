@@ -6,7 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,19 +63,20 @@ fun ChecklistRow(
             val checked = item.id in checkedIds
             Row(
                 modifier = Modifier
-                    .heightIn(min = 72.dp)
+                    .height(72.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (checked) accent.copy(alpha = 0.14f) else BoardSurfaceHigh)
                     .clickable { onToggle(item.id) }
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 22.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                CheckboxGlyph(tint = if (checked) accent else LabelTertiary, checked = checked)
+                CheckboxGlyph(tint = if (checked) accent else LabelTertiary, checked = checked, size = 24.dp)
                 Text(
                     text = item.text,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (checked) LabelTertiary else LabelPrimary
+                    color = if (checked) LabelTertiary else LabelPrimary,
+                    maxLines = 1
                 )
             }
         }

@@ -26,6 +26,8 @@ import java.time.ZoneId
 
 data class EditorUiState(
     val loaded: Boolean = false,
+    val date: LocalDate = LocalDate.now(),
+    val isToday: Boolean = true,
     val blocks: List<BlockDraft> = emptyList(),
     val dayStart: LocalTime = SettingsRepository.DEFAULT_DAY_START,
     val importErrors: List<String> = emptyList(),
@@ -34,7 +36,7 @@ data class EditorUiState(
     /** The sweep run over the draft, which is what Review renders. */
     val preview: ResolvedPlan
         get() = ResolvedPlan.from(
-            date = LocalDate.now(),
+            date = date,
             dayStart = dayStart,
             blocks = blocks.mapIndexed { index, draft -> draft.toBlock(index) }
         )
@@ -46,23 +48,49 @@ class PlanEditorViewModel(
     private val zone: ZoneId = ZoneId.systemDefault()
 ) : ViewModel() {
 
-    private val date = LocalDate.now(zone)
-    private val _state = MutableStateFlow(EditorUiState())
+    private val today = LocalDate.now(zone)
+    private val _state = MutableStateFlow(EditorUiState(date = today))
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
 
+    /** The plan row for the day on screen, so committing edits it rather than adding a second. */
     private var existingDayId = 0L
 
     init {
+        load(today)
+    }
+
+    /** Each day is its own plan, loaded and committed on its own. */
+    fun showDay(deltaDays: Long) = load(_state.value.date.plusDays(deltaDays))
+
+    fun showToday() = load(today)
+
+    /** Yesterday's shape is usually most of today's; ids are dropped so it lands as new blocks. */
+    fun copyDay(from: LocalDate) {
+        viewModelScope.launch {
+            val source = plans.load(from) ?: return@launch
+            _state.update { state ->
+                state.copy(
+                    blocks = source.blocks.map { block ->
+                        BlockDraft.copyFrom(block, source.checklists[block.id].orEmpty())
+                    }
+                )
+            }
+        }
+    }
+
+    private fun load(date: LocalDate) {
         viewModelScope.launch {
             val dayStart = settings.dayStart.first()
             val existing = plans.load(date)
             existingDayId = existing?.day?.id ?: 0L
             _state.value = EditorUiState(
                 loaded = true,
+                date = date,
+                isToday = date == today,
                 dayStart = dayStart,
                 blocks = existing?.let { plan ->
                     plan.blocks.map { block -> BlockDraft.of(block, plan.checklists[block.id].orEmpty()) }
-                } ?: listOf(BlockDraft.new())
+                }.orEmpty()
             )
         }
     }
@@ -91,7 +119,9 @@ class PlanEditorViewModel(
                 // A day of flow blocks pasted at four in the afternoon means "from now",
                 // not "from this morning", so the chain is re-anchored and said so.
                 val now = LocalTime.now(zone).withSecond(0).withNano(0)
-                val reanchor = blocks.none { it.fixed } && _state.value.dayStart.isBefore(now.minusMinutes(30))
+                val reanchor = _state.value.isToday &&
+                    blocks.none { it.fixed } &&
+                    _state.value.dayStart.isBefore(now.minusMinutes(30))
                 val dayStart = if (reanchor) now else _state.value.dayStart
                 if (reanchor) viewModelScope.launch { settings.setDayStart(now) }
 
@@ -160,6 +190,7 @@ class PlanEditorViewModel(
     /** The one write path: everything above only shapes the draft. */
     fun commit(onCommitted: () -> Unit) {
         val drafts = _state.value.blocks.filter { it.title.isNotBlank() }
+        val date = _state.value.date
         viewModelScope.launch {
             plans.commit(
                 date = date,

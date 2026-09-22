@@ -140,6 +140,21 @@ private fun Glyph(size: Dp, modifier: Modifier, draw: DrawScope.() -> Unit) {
 @Suppress("unused")
 private val pathOperationKeepsImportHonest = PathOperation.Union
 
+/** A chevron, for stepping through days. */
+@Composable
+fun ChevronGlyph(tint: Color, pointsLeft: Boolean, size: Dp = 22.dp, modifier: Modifier = Modifier) =
+    GlyphBox(size, modifier) {
+        val stroke = this.size.width * 0.14f
+        val near = this.size.width * 0.34f
+        val far = this.size.width * 0.72f
+        val path = Path().apply {
+            moveTo(if (pointsLeft) far else near, this@GlyphBox.size.height * 0.12f)
+            lineTo(if (pointsLeft) near else far, this@GlyphBox.size.height * 0.5f)
+            lineTo(if (pointsLeft) far else near, this@GlyphBox.size.height * 0.88f)
+        }
+        drawPath(path, tint, style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+
 /** Drag handle: three stacked rules, the way a reorderable list row is grabbed. */
 @Composable
 fun HandleGlyph(tint: Color, size: Dp = 26.dp, modifier: Modifier = Modifier) = GlyphBox(size, modifier) {

@@ -119,7 +119,10 @@ private fun PlanRoute(
                 onImport = { onScreen(Screen.IMPORT) },
                 onBack = { onScreen(Screen.BOARD) },
                 onShiftDayStart = editor::shiftDayStart,
-                onDayStartNow = editor::startDayNow
+                onDayStartNow = editor::startDayNow,
+                onDay = editor::showDay,
+                onToday = editor::showToday,
+                onCopyDay = editor::copyDay
             )
         )
     }

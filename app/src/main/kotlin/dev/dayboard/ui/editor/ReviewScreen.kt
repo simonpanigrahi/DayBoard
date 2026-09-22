@@ -76,13 +76,14 @@ fun ReviewScreen(
                 tone = Tone.Filled,
                 accent = SystemBlue,
                 height = 76.dp,
+                corner = 14.dp,
                 onClick = onCommit
             )
         }
 
         val notes = warnings + plan.conflicts.map { it.message }
         if (notes.isNotEmpty()) {
-            Panel(padding = 22.dp) {
+            Panel(corner = 18.dp, padding = 22.dp) {
                 notes.forEach {
                     Text(
                         text = it,
@@ -94,7 +95,7 @@ fun ReviewScreen(
             }
         }
 
-        Panel(Modifier.fillMaxSize(), padding = 10.dp) {
+        Panel(Modifier.fillMaxSize(), corner = 18.dp, padding = 10.dp) {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(plan.blocks, key = { it.block.id.takeIf { id -> id != 0L } ?: it.startMinute }) { resolved ->
                     Row(

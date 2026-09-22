@@ -131,17 +131,21 @@ private fun slotFor(
 
 private fun Slot.toActiveBlock(now: Instant): ActiveBlock {
     val plannedMs = resolved.minutes * 60_000L
+    // The countdown measures work done, not wall time occupied, so pausing or stepping
+    // out for a break stops it. Those minutes are still recorded against the block as
+    // break and untracked; they just do not eat the time left to work.
+    //
     // A tracked block is measured from the log; an untracked one can only be read off
     // the schedule, which is a wall-clock quantity and stays one.
-    val elapsedMs = if (started) actuals.elapsedMs else Duration.between(startAt, now).toMillis().coerceAtLeast(0)
-    val overrunMs = if (started) actuals.overrunMs else (elapsedMs - plannedMs).coerceAtLeast(0)
+    val workedMs = if (started) actuals.focusedMs else Duration.between(startAt, now).toMillis().coerceAtLeast(0)
+    val overrunMs = (workedMs - plannedMs).coerceAtLeast(0)
     return ActiveBlock(
         resolved = resolved,
         startedAt = events.firstOrNull { it.type == EventType.BLOCK_START }?.wallAt,
         actuals = actuals,
-        remainingMs = (plannedMs - elapsedMs).coerceAtLeast(0),
+        remainingMs = (plannedMs - workedMs).coerceAtLeast(0),
         overrunMs = overrunMs,
-        progress = if (plannedMs == 0L) 1f else (elapsedMs.toFloat() / plannedMs).coerceIn(0f, 1f),
+        progress = if (plannedMs == 0L) 1f else (workedMs.toFloat() / plannedMs).coerceIn(0f, 1f),
         checkedItemIds = checkedItems(events),
         onBreak = lastOf(EventType.BREAK_START, EventType.BREAK_END) == EventType.BREAK_START,
         paused = lastOf(EventType.PAUSE, EventType.RESUME) == EventType.PAUSE
