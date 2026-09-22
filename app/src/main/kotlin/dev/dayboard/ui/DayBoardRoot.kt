@@ -101,7 +101,9 @@ private fun EditorRoute(
                 onItemText = editor::setItemText,
                 onRemoveItem = editor::removeItem,
                 onReview = { onScreen(true) },
-                onBack = onLeave
+                onBack = onLeave,
+                onShiftDayStart = editor::shiftDayStart,
+                onDayStartNow = editor::startDayNow
             )
         )
     }

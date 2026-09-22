@@ -25,6 +25,8 @@ private val TARGET = 72.dp
 fun ActionBar(
     running: Boolean,
     paused: Boolean,
+    canStart: Boolean,
+    canAct: Boolean,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -49,15 +51,15 @@ fun ActionBar(
 
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         if (!running) {
-            BarButton("▶  START", Modifier.weight(1f), onStart)
+            BarButton("▶  START", Modifier.weight(1f), canStart, onStart)
         } else if (paused) {
-            BarButton("▶  RESUME", Modifier.weight(1f), onResume)
+            BarButton("▶  RESUME", Modifier.weight(1f), canAct, onResume)
         } else {
-            BarButton("⏸  PAUSE", Modifier.weight(1f), onPause)
+            BarButton("⏸  PAUSE", Modifier.weight(1f), canAct, onPause)
         }
-        BarButton("☕  BREAK", Modifier.weight(1f)) { chipsOpen = true }
-        BarButton("+5m", Modifier.weight(1f), onExtend)
-        BarButton("✓  DONE", Modifier.weight(1f), onDone)
+        BarButton("☕  BREAK", Modifier.weight(1f), canAct) { chipsOpen = true }
+        BarButton("+5m", Modifier.weight(1f), canAct, onExtend)
+        BarButton("✓  DONE", Modifier.weight(1f), canAct, onDone)
     }
 }
 
@@ -75,9 +77,15 @@ private fun BreakChips(onPick: (BreakKind) -> Unit, onCancel: () -> Unit, modifi
 }
 
 @Composable
-private fun BarButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun BarButton(
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.height(TARGET),
         colors = ButtonDefaults.buttonColors(
             containerColor = BoardSurface,

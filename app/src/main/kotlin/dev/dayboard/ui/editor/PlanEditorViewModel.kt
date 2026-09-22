@@ -63,6 +63,19 @@ class PlanEditorViewModel(
         }
     }
 
+    /** Flow blocks chain from here, so a plan built in the evening needs this movable. */
+    fun shiftDayStart(minutes: Long) {
+        val moved = _state.value.dayStart.plusMinutes(minutes)
+        _state.update { it.copy(dayStart = moved) }
+        viewModelScope.launch { settings.setDayStart(moved) }
+    }
+
+    fun startDayNow() {
+        val now = LocalTime.now(zone).withSecond(0).withNano(0)
+        _state.update { it.copy(dayStart = now) }
+        viewModelScope.launch { settings.setDayStart(now) }
+    }
+
     fun addBlock() = edit { it + BlockDraft.new() }
 
     fun removeBlock(key: Long) = edit { blocks -> blocks.filterNot { it.key == key } }

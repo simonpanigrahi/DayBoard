@@ -14,11 +14,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.model.BlockKind
+import dev.dayboard.ui.board.formatClock
+import dev.dayboard.ui.theme.BoardDim
 
 data class EditorActions(
     val onAdd: () -> Unit,
@@ -33,7 +36,9 @@ data class EditorActions(
     val onItemText: (Long, Long, String) -> Unit,
     val onRemoveItem: (Long, Long) -> Unit,
     val onReview: () -> Unit,
-    val onBack: () -> Unit
+    val onBack: () -> Unit,
+    val onShiftDayStart: (Long) -> Unit,
+    val onDayStartNow: () -> Unit
 )
 
 @Composable
@@ -63,6 +68,20 @@ fun PlanEditorScreen(state: EditorUiState, actions: EditorActions, modifier: Mod
                 modifier = Modifier.height(72.dp).padding(start = 12.dp)
             ) {
                 Text("REVIEW", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("DAY STARTS", style = MaterialTheme.typography.labelMedium, color = BoardDim)
+            TextButton(onClick = { actions.onShiftDayStart(-15) }, modifier = Modifier.height(72.dp)) {
+                Text("\u2212", style = MaterialTheme.typography.titleLarge)
+            }
+            Text(formatClock(state.dayStart), style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = { actions.onShiftDayStart(15) }, modifier = Modifier.height(72.dp)) {
+                Text("+", style = MaterialTheme.typography.titleLarge)
+            }
+            TextButton(onClick = actions.onDayStartNow, modifier = Modifier.height(72.dp)) {
+                Text("NOW", style = MaterialTheme.typography.labelMedium, color = BoardDim)
             }
         }
 

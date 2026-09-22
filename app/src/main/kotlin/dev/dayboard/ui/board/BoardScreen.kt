@@ -59,6 +59,8 @@ fun BoardScreen(state: BoardUiState, actions: BoardActions, modifier: Modifier =
             ActionBar(
                 running = active != null && active.startedAt != null,
                 paused = active?.paused == true,
+                canStart = active != null || board.next != null,
+                canAct = active != null,
                 onStart = actions.onStart,
                 onPause = actions.onPause,
                 onResume = actions.onResume,

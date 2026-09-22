@@ -78,17 +78,20 @@ class BoardViewModel(
 
     private val currentBlockId: Long? get() = state.value.board?.current?.resolved?.block?.id
 
-    fun startCurrent() = append(EventType.BLOCK_START, currentBlockId ?: state.value.board?.next?.block?.id)
+    fun startCurrent() {
+        val target = currentBlockId ?: state.value.board?.next?.block?.id ?: return
+        append(EventType.BLOCK_START, target)
+    }
 
-    fun pause() = append(EventType.PAUSE, currentBlockId)
+    fun pause() = onCurrentBlock(EventType.PAUSE)
 
-    fun resume() = append(EventType.RESUME, currentBlockId)
+    fun resume() = onCurrentBlock(EventType.RESUME)
 
-    fun startBreak(kind: BreakKind) = append(EventType.BREAK_START, currentBlockId, meta = kind.meta)
+    fun startBreak(kind: BreakKind) = onCurrentBlock(EventType.BREAK_START, meta = kind.meta)
 
-    fun endBreak() = append(EventType.BREAK_END, currentBlockId)
+    fun endBreak() = onCurrentBlock(EventType.BREAK_END)
 
-    fun extend(minutes: Int = 5) = append(EventType.BLOCK_EXTEND, currentBlockId, meta = minutes.toString())
+    fun extend(minutes: Int = 5) = onCurrentBlock(EventType.BLOCK_EXTEND, meta = minutes.toString())
 
     /** Closes the running block and opens the next one, as two appended facts. */
     fun doneAndAdvance() {
@@ -102,16 +105,24 @@ class BoardViewModel(
     }
 
     fun toggleItem(itemId: Long) {
-        val board = state.value.board ?: return
-        val checked = board.current?.checkedItemIds.orEmpty().contains(itemId)
-        append(
+        val checked = state.value.board?.current?.checkedItemIds.orEmpty().contains(itemId)
+        onCurrentBlock(
             type = if (checked) EventType.ITEM_UNCHECK else EventType.ITEM_CHECK,
-            blockId = currentBlockId,
             refId = itemId
         )
     }
 
-    private fun append(type: EventType, blockId: Long?, refId: Long? = null, meta: String? = null) {
+    /**
+     * Block-level events need a block. With nothing running, the honest record is no
+     * record: an event with a null blockId is a day-level fact and would be an orphan
+     * that no fold ever reads.
+     */
+    private fun onCurrentBlock(type: EventType, refId: Long? = null, meta: String? = null) {
+        val blockId = currentBlockId ?: return
+        append(type, blockId, refId, meta)
+    }
+
+    private fun append(type: EventType, blockId: Long, refId: Long? = null, meta: String? = null) {
         viewModelScope.launch { events.append(type, blockId, refId, meta) }
     }
 
