@@ -3,34 +3,41 @@ package dev.dayboard.ui.theme
 import androidx.compose.ui.graphics.Color
 import dev.dayboard.engine.model.ColorRole
 
-// True black, not near-black: the board is always on, and an OLED panel only saves
-// power and avoids burn-in on pixels that are actually off.
+// True black stays: the board is always on, and only pixels that are off cost nothing
+// and cannot burn in. Everything above it is the iOS dark elevation ramp.
 val BoardBlack = Color(0xFF000000)
-val BoardSurface = Color(0xFF101010)
-val BoardText = Color(0xFFEDEDED)
-val BoardDim = Color(0xFF7C7C7C)
-val BoardAmber = Color(0xFFFFB020)
+val BoardSurface = Color(0xFF1C1C1E)
+val BoardSurfaceHigh = Color(0xFF2C2C2E)
+val BoardHairline = Color(0x14FFFFFF)
 
-val RoleDeep = Color(0xFF5B8DEF)
-val RoleAdmin = Color(0xFF9B7BEA)
-val RoleRest = Color(0xFF4CAF7D)
-val RoleMeal = Color(0xFFD9904B)
-val RoleAppointment = Color(0xFFD9584B)
-val RoleBuffer = Color(0xFF3A4350)
-val RoleNeutral = Color(0xFF6E7681)
-val RoleTeal = Color(0xFF3FB8AF)
-val RolePink = Color(0xFFE0629B)
-val RoleLime = Color(0xFF9ACD4E)
+// Label colours, as opacities of white rather than separate greys, so they sit on any panel.
+val LabelPrimary = Color(0xFFFFFFFF)
+val LabelSecondary = Color(0x99EBEBF5)
+val LabelTertiary = Color(0x4DEBEBF5)
+
+val SystemBlue = Color(0xFF0A84FF)
+val SystemGreen = Color(0xFF30D158)
+val SystemIndigo = Color(0xFF5E5CE6)
+val SystemOrange = Color(0xFFFF9F0A)
+val SystemPink = Color(0xFFFF375F)
+val SystemPurple = Color(0xFFBF5AF2)
+val SystemRed = Color(0xFFFF453A)
+val SystemTeal = Color(0xFF40C8E0)
+val SystemGray = Color(0xFF8E8E93)
+val SystemGray3 = Color(0xFF48484A)
+
+/** Warnings and overrun. One colour, used for nothing else. */
+val BoardAmber = SystemOrange
 
 fun colorFor(role: ColorRole): Color = when (role) {
-    ColorRole.DEEP -> RoleDeep
-    ColorRole.ADMIN -> RoleAdmin
-    ColorRole.REST -> RoleRest
-    ColorRole.MEAL -> RoleMeal
-    ColorRole.APPOINTMENT -> RoleAppointment
-    ColorRole.BUFFER -> RoleBuffer
-    ColorRole.ACCENT_A -> RoleTeal
-    ColorRole.ACCENT_B -> RolePink
-    ColorRole.ACCENT_C -> RoleLime
-    ColorRole.NEUTRAL -> RoleNeutral
+    ColorRole.DEEP -> SystemBlue
+    ColorRole.ADMIN -> SystemIndigo
+    ColorRole.REST -> SystemGreen
+    ColorRole.MEAL -> SystemOrange
+    ColorRole.APPOINTMENT -> SystemRed
+    ColorRole.BUFFER -> SystemGray3
+    ColorRole.ACCENT_A -> SystemTeal
+    ColorRole.ACCENT_B -> SystemPink
+    ColorRole.ACCENT_C -> SystemPurple
+    ColorRole.NEUTRAL -> SystemGray
 }

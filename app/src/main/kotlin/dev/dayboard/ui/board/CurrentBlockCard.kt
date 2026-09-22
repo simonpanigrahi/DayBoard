@@ -21,7 +21,9 @@ import dev.dayboard.engine.layout.ResolvedBlock
 import dev.dayboard.engine.model.ActiveBlock
 import dev.dayboard.engine.model.ChecklistItem
 import dev.dayboard.ui.theme.BoardAmber
-import dev.dayboard.ui.theme.BoardDim
+import dev.dayboard.ui.theme.LabelPrimary
+import dev.dayboard.ui.theme.LabelSecondary
+import dev.dayboard.ui.theme.LabelTertiary
 import dev.dayboard.ui.theme.Panel
 import dev.dayboard.ui.theme.colorFor
 
@@ -44,44 +46,35 @@ fun CurrentBlockCard(
     SideEffect { fraction.floatValue = active.progress }
 
     Panel(modifier, accent = accent) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("NOW", style = MaterialTheme.typography.labelLarge, color = accent)
-                Text(
-                    text = "  ${formatClock(active.resolved.start)}–${formatClock(active.resolved.end)}" +
-                        "  ·  ${active.resolved.minutes}m",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BoardDim
-                )
-            }
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            EyebrowRow(
+                label = if (active.paused) "PAUSED" else "NOW",
+                labelColor = if (active.paused) BoardAmber else accent,
+                detail = "${formatClock(active.resolved.start)} – ${formatClock(active.resolved.end)}" +
+                    "   ${active.resolved.minutes} min"
+            )
 
-            Spacer(Modifier.weight(0.8f))
+            Spacer(Modifier.weight(0.7f))
 
             Text(
                 text = active.resolved.block.title,
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = LabelPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = if (overrun) "+${formatCountdown(active.overrunMs)}" else formatCountdown(active.remainingMs),
                     style = MaterialTheme.typography.displayMedium,
-                    color = if (overrun) BoardAmber else MaterialTheme.colorScheme.onBackground
+                    color = if (overrun) BoardAmber else LabelPrimary
                 )
                 Text(
-                    text = if (overrun) "  over" else "  left",
+                    text = if (overrun) "over" else "left",
                     style = MaterialTheme.typography.titleMedium,
-                    color = BoardDim,
-                    modifier = Modifier.padding(bottom = 14.dp)
-                )
-                Text(
-                    text = if (active.paused) "PAUSED" else "",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = BoardAmber,
-                    modifier = Modifier.weight(1f).padding(bottom = 14.dp)
+                    color = LabelSecondary,
+                    modifier = Modifier.padding(start = 14.dp, bottom = 12.dp)
                 )
             }
 
@@ -89,34 +82,50 @@ fun CurrentBlockCard(
 
             ProgressBar(progress = fraction, color = accent)
 
-            ChecklistRow(checklist, active.checkedItemIds, onToggleItem)
+            ChecklistRow(checklist, active.checkedItemIds, accent, onToggleItem, Modifier.padding(top = 14.dp))
         }
     }
 }
 
 @Composable
 private fun IdleCard(startable: ResolvedBlock?, modifier: Modifier = Modifier) {
-    Panel(modifier, accent = startable?.let { colorFor(it.block.colorRole) } ?: BoardDim) {
+    val accent = startable?.let { colorFor(it.block.colorRole) } ?: LabelTertiary
+    Panel(modifier, accent = startable?.let { accent }) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-            Text(
-                text = if (startable == null) "DAY DONE" else "READY",
-                style = MaterialTheme.typography.labelLarge,
-                color = BoardDim
+            EyebrowRow(
+                label = if (startable == null) "DAY DONE" else "READY",
+                labelColor = accent,
+                detail = startable?.let { "${formatClock(it.start)}   ${it.minutes} min" } ?: ""
             )
             Text(
                 text = startable?.block?.title ?: "Nothing left to run",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (startable == null) LabelSecondary else LabelPrimary,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 18.dp)
             )
             if (startable != null) {
                 Text(
-                    text = "${formatClock(startable.start)} · ${startable.minutes}m  ·  press START when you begin",
+                    text = "Press start when you begin",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = BoardDim
+                    color = LabelSecondary,
+                    modifier = Modifier.padding(top = 10.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun EyebrowRow(label: String, labelColor: androidx.compose.ui.graphics.Color, detail: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = labelColor)
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.labelMedium,
+            color = LabelTertiary,
+            modifier = Modifier.padding(start = 18.dp)
+        )
     }
 }

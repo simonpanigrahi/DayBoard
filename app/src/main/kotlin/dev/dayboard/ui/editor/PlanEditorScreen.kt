@@ -6,23 +6,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.model.BlockKind
 import dev.dayboard.ui.board.formatClock
-import dev.dayboard.ui.theme.BoardDim
+import dev.dayboard.ui.common.ActionButton
+import dev.dayboard.ui.common.GhostButton
+import dev.dayboard.ui.common.Tone
+import dev.dayboard.ui.theme.LabelPrimary
+import dev.dayboard.ui.theme.LabelSecondary
+import dev.dayboard.ui.theme.LabelTertiary
+import dev.dayboard.ui.theme.SystemBlue
 
 data class EditorActions(
     val onAdd: () -> Unit,
@@ -53,46 +56,48 @@ fun PlanEditorScreen(state: EditorUiState, actions: EditorActions, modifier: Mod
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding()
-            .padding(24.dp),
+            .padding(horizontal = 34.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("TODAY'S PLAN", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = actions.onBack, modifier = Modifier.height(72.dp)) {
-                Text("BOARD", style = MaterialTheme.typography.labelMedium)
+            Column(Modifier.weight(1f)) {
+                Text("Today's plan", style = MaterialTheme.typography.displaySmall, color = LabelPrimary)
+                Text(
+                    text = "Drag to reorder. Flow blocks chain from the day's start.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = LabelSecondary,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
             }
-            OutlinedButton(
-                onClick = actions.onImport,
-                modifier = Modifier.height(72.dp).padding(start = 12.dp)
-            ) {
-                Text("PASTE A DAY", style = MaterialTheme.typography.labelMedium)
-            }
-            OutlinedButton(
-                onClick = actions.onAdd,
-                modifier = Modifier.height(72.dp).padding(start = 12.dp)
-            ) {
-                Text("+ BLOCK", style = MaterialTheme.typography.labelMedium)
-            }
-            Button(
-                onClick = actions.onReview,
-                modifier = Modifier.height(72.dp).padding(start = 12.dp)
-            ) {
-                Text("REVIEW", style = MaterialTheme.typography.labelLarge)
-            }
+            GhostButton("Board", accent = SystemBlue, onClick = actions.onBack)
+            GhostButton("Paste a day", accent = SystemBlue, onClick = actions.onImport)
+            ActionButton(
+                label = "ADD BLOCK",
+                modifier = Modifier.padding(start = 10.dp),
+                height = 76.dp,
+                onClick = actions.onAdd
+            )
+            ActionButton(
+                label = "REVIEW",
+                modifier = Modifier.padding(start = 10.dp),
+                tone = Tone.Filled,
+                accent = SystemBlue,
+                height = 76.dp,
+                onClick = actions.onReview
+            )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("DAY STARTS", style = MaterialTheme.typography.labelMedium, color = BoardDim)
-            TextButton(onClick = { actions.onShiftDayStart(-15) }, modifier = Modifier.height(72.dp)) {
-                Text("\u2212", style = MaterialTheme.typography.titleLarge)
-            }
-            Text(formatClock(state.dayStart), style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = { actions.onShiftDayStart(15) }, modifier = Modifier.height(72.dp)) {
-                Text("+", style = MaterialTheme.typography.titleLarge)
-            }
-            TextButton(onClick = actions.onDayStartNow, modifier = Modifier.height(72.dp)) {
-                Text("NOW", style = MaterialTheme.typography.labelMedium, color = BoardDim)
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("DAY STARTS", style = MaterialTheme.typography.labelMedium, color = LabelTertiary)
+            ActionButton("−", Modifier.size(64.dp), height = 64.dp, corner = 18.dp) { actions.onShiftDayStart(-15) }
+            Text(
+                text = formatClock(state.dayStart),
+                style = MaterialTheme.typography.titleLarge,
+                color = LabelPrimary,
+                modifier = Modifier.padding(horizontal = 10.dp)
+            )
+            ActionButton("+", Modifier.size(64.dp), height = 64.dp, corner = 18.dp) { actions.onShiftDayStart(15) }
+            GhostButton("Start now", accent = SystemBlue, onClick = actions.onDayStartNow)
         }
 
         LazyColumn(

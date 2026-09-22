@@ -1,5 +1,7 @@
 package dev.dayboard.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -30,20 +32,22 @@ fun DayBoardRoot(container: AppContainer) {
     // resuming a draft the user walked away from.
     var session by rememberSaveable { mutableIntStateOf(0) }
 
-    if (screen == Screen.BOARD) {
-        BoardRoute(
-            container = container,
-            onEdit = {
-                session++
-                screen = Screen.EDITOR
-            },
-            onImport = {
-                session++
-                screen = Screen.IMPORT
-            }
-        )
-    } else {
-        PlanRoute(container, session, screen) { screen = it }
+    Crossfade(targetState = screen, animationSpec = tween(220), label = "screen") { current ->
+        if (current == Screen.BOARD) {
+            BoardRoute(
+                container = container,
+                onEdit = {
+                    session++
+                    screen = Screen.EDITOR
+                },
+                onImport = {
+                    session++
+                    screen = Screen.IMPORT
+                }
+            )
+        } else {
+            PlanRoute(container, session, current) { screen = it }
+        }
     }
 }
 

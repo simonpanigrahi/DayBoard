@@ -1,39 +1,48 @@
 package dev.dayboard.ui.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * One panel shape for the whole board. The optional accent is the block's colour,
- * which is what ties a card to its segment on the ribbon.
+ * One card shape for the whole app: the raised step of the elevation ramp, a hairline
+ * to separate it from true black, and the block's colour as a wash rather than a stripe,
+ * so the accent reads without drawing a border around itself.
  */
 @Composable
 fun Panel(
     modifier: Modifier = Modifier,
     accent: Color? = null,
-    padding: Int = 26,
+    corner: Dp = 30.dp,
+    padding: Dp = 30.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Row(
+    val shape = RoundedCornerShape(corner)
+    Column(
         modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(shape)
             .background(BoardSurface)
-    ) {
-        if (accent != null) {
-            Row(Modifier.width(8.dp).fillMaxHeight().background(accent)) {}
-        }
-        Column(Modifier.fillMaxWidth().padding(padding.dp), content = content)
-    }
+            .then(
+                if (accent == null) Modifier
+                else Modifier.background(
+                    Brush.linearGradient(
+                        0f to accent.copy(alpha = 0.16f),
+                        0.7f to Color.Transparent
+                    )
+                )
+            )
+            .border(Dp.Hairline, BoardHairline, shape)
+            .padding(padding),
+        content = content
+    )
 }

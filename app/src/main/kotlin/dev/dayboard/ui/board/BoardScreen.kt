@@ -4,26 +4,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.dayboard.ui.theme.BoardAmber
-import dev.dayboard.ui.theme.BoardBlack
-import dev.dayboard.ui.theme.BoardDim
+import dev.dayboard.ui.common.ActionButton
+import dev.dayboard.ui.common.Tone
+import dev.dayboard.ui.theme.LabelPrimary
+import dev.dayboard.ui.theme.LabelSecondary
+import dev.dayboard.ui.theme.LabelTertiary
+import dev.dayboard.ui.theme.SystemBlue
 
 data class BoardActions(
     val onStart: () -> Unit,
@@ -49,8 +48,8 @@ fun BoardScreen(state: BoardUiState, actions: BoardActions, modifier: Modifier =
             // The tablet's status bar and taskbar overlap the window, and the ribbon is
             // the first thing to disappear under them.
             .safeDrawingPadding()
-            .padding(horizontal = 32.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = 34.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
         if (board == null) {
             EmptyBoard(state.loading, actions)
@@ -63,7 +62,7 @@ fun BoardScreen(state: BoardUiState, actions: BoardActions, modifier: Modifier =
         if (active != null && active.onBreak) {
             BreakFace(active, actions.onEndBreak, Modifier.weight(1f))
         } else {
-            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                 CurrentBlockCard(
                     active = active,
                     startable = board.startable,
@@ -71,12 +70,17 @@ fun BoardScreen(state: BoardUiState, actions: BoardActions, modifier: Modifier =
                     onToggleItem = actions.onToggleItem,
                     modifier = Modifier.weight(1.7f).fillMaxHeight()
                 )
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    // Both panels size to their content and the spare height goes to the
-                    // spacer, so neither can ever clip its last row.
+                // Scrolls rather than squeezes: a Column that runs out of height gives
+                // its last child nothing, which silently emptied the totals panel.
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(22.dp)
+                ) {
                     UpNextPane(board.next, board.later, Modifier.fillMaxWidth())
                     DayTotalsPane(board.dayTotals, Modifier.fillMaxWidth())
-                    Spacer(Modifier.weight(1f))
                 }
             }
 
@@ -106,38 +110,39 @@ private fun EmptyBoard(loading: Boolean, actions: BoardActions) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (loading) {
+            Text("\u2026", style = MaterialTheme.typography.displayMedium, color = LabelTertiary)
+            return@Column
+        }
         Text(
-            text = if (loading) "…" else "No plan for today",
-            style = MaterialTheme.typography.displayMedium,
-            color = BoardDim
+            text = "No plan for today",
+            style = MaterialTheme.typography.displaySmall,
+            color = LabelPrimary
         )
-        if (!loading) {
-            Text(
-                text = "Paste a day in one go, or lay it out block by block.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = BoardDim,
-                modifier = Modifier.padding(top = 16.dp)
+        Text(
+            text = "Paste a day in one go, or lay it out block by block.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = LabelSecondary,
+            modifier = Modifier.padding(top = 14.dp)
+        )
+        Row(
+            Modifier.padding(top = 44.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ActionButton(
+                label = "FILL THE DAY",
+                tone = Tone.Filled,
+                accent = SystemBlue,
+                height = 88.dp,
+                corner = 24.dp,
+                onClick = actions.onImport
             )
-            Row(
-                Modifier.padding(top = 40.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Button(
-                    onClick = actions.onImport,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.height(84.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BoardAmber, contentColor = BoardBlack)
-                ) {
-                    Text("FILL THE DAY", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 20.dp))
-                }
-                OutlinedButton(
-                    onClick = actions.onEdit,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.height(84.dp)
-                ) {
-                    Text("BUILD BY HAND", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 20.dp))
-                }
-            }
+            ActionButton(
+                label = "BUILD BY HAND",
+                height = 88.dp,
+                corner = 24.dp,
+                onClick = actions.onEdit
+            )
         }
     }
 }

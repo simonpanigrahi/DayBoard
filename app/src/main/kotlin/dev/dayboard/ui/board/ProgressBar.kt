@@ -7,24 +7,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.dayboard.ui.theme.RoleBuffer
 
 /**
  * Reads [progress] inside drawBehind, so a changing fraction repaints one draw node
- * instead of recomposing a progress indicator once a second for the whole second.
+ * rather than recomposing an indicator once a second, and the fill keeps round caps at
+ * both ends the way a capsule does.
  */
 @Composable
-fun ProgressBar(progress: State<Float>, color: Color, modifier: Modifier = Modifier) {
+fun ProgressBar(
+    progress: State<Float>,
+    color: Color,
+    modifier: Modifier = Modifier,
+    height: Dp = 14.dp
+) {
     Box(
         modifier
             .fillMaxWidth()
-            .height(20.dp)
+            .height(height)
             .drawBehind {
-                drawRect(color = RoleBuffer, size = size)
-                drawRect(color = color, size = Size(size.width * progress.value, size.height))
+                val radius = CornerRadius(size.height / 2f)
+                drawRoundRect(color = Color.White.copy(alpha = 0.10f), size = size, cornerRadius = radius)
+                val filled = size.width * progress.value.coerceIn(0f, 1f)
+                if (filled > 0f) {
+                    drawRoundRect(
+                        color = color,
+                        size = Size(filled.coerceAtLeast(size.height), size.height),
+                        cornerRadius = radius
+                    )
+                }
             }
     )
 }

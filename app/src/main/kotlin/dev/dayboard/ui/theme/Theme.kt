@@ -6,18 +6,19 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
 private val BoardColors = darkColorScheme(
-    primary = BoardAmber,
+    primary = SystemBlue,
     onPrimary = BoardBlack,
-    secondary = RoleDeep,
+    secondary = SystemTeal,
     onSecondary = BoardBlack,
     background = BoardBlack,
-    onBackground = BoardText,
+    onBackground = LabelPrimary,
     surface = BoardSurface,
-    onSurface = BoardText,
-    surfaceVariant = BoardSurface,
-    onSurfaceVariant = BoardDim,
-    outline = RoleBuffer,
-    error = RoleAppointment
+    onSurface = LabelPrimary,
+    surfaceVariant = BoardSurfaceHigh,
+    onSurfaceVariant = LabelSecondary,
+    outline = BoardHairline,
+    error = SystemRed,
+    onError = BoardBlack
 )
 
 /**

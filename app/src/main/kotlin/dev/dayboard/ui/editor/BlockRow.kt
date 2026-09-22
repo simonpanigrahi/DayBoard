@@ -1,20 +1,19 @@
 package dev.dayboard.ui.editor
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +22,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.model.BlockKind
 import dev.dayboard.ui.board.formatClock
-import dev.dayboard.ui.theme.BoardDim
-import dev.dayboard.ui.theme.BoardSurface
+import dev.dayboard.ui.common.ActionButton
+import dev.dayboard.ui.common.GhostButton
+import dev.dayboard.ui.common.HandleGlyph
+import dev.dayboard.ui.common.Tone
+import dev.dayboard.ui.common.boardFieldColors
+import dev.dayboard.ui.theme.LabelPrimary
+import dev.dayboard.ui.theme.LabelSecondary
+import dev.dayboard.ui.theme.LabelTertiary
+import dev.dayboard.ui.theme.Panel
+import dev.dayboard.ui.theme.SystemRed
 import dev.dayboard.ui.theme.colorFor
+import java.time.LocalTime
 
 @Composable
 fun BlockRow(
@@ -36,22 +44,12 @@ fun BlockRow(
     actions: EditorActions,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(if (dragging) colorFor(draft.colorRole).copy(alpha = 0.3f) else BoardSurface)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "☰",
-                style = MaterialTheme.typography.headlineMedium,
-                color = BoardDim,
-                modifier = Modifier
+    val accent = colorFor(draft.colorRole)
+    Panel(modifier.fillMaxWidth(), accent = if (dragging) accent else null, corner = 24.dp, padding = 18.dp) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
                     .size(72.dp)
-                    .padding(20.dp)
                     .pointerInput(index) {
                         detectDragGestures(
                             onDragStart = { reorder.start(index) },
@@ -62,44 +60,63 @@ fun BlockRow(
                             onDragEnd = { reorder.end() },
                             onDragCancel = { reorder.end() }
                         )
-                    }
-            )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                HandleGlyph(if (dragging) accent else LabelTertiary)
+            }
+
             OutlinedTextField(
                 value = draft.title,
                 onValueChange = { actions.onTitle(draft.key, it) },
                 singleLine = true,
-                placeholder = { Text("Block title", color = BoardDim) },
-                textStyle = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
+                placeholder = { Text("Block title", color = LabelTertiary) },
+                textStyle = MaterialTheme.typography.titleMedium,
+                shape = RoundedCornerShape(18.dp),
+                colors = boardFieldColors(),
+                modifier = Modifier.weight(1f).padding(horizontal = 14.dp)
             )
-            TextButton(onClick = { actions.onColor(draft.key) }, modifier = Modifier.size(72.dp)) {
-                Row(
-                    Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(colorFor(draft.colorRole))
-                ) {}
+
+            Box(
+                Modifier
+                    .size(72.dp)
+                    .clickable { actions.onColor(draft.key) },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(Modifier.size(32.dp).clip(CircleShape).background(accent))
             }
-            TextButton(onClick = { actions.onRemove(draft.key) }, modifier = Modifier.heightIn(min = 72.dp)) {
-                Text("DELETE", style = MaterialTheme.typography.labelMedium, color = BoardDim)
-            }
+
+            GhostButton("Delete", accent = SystemRed) { actions.onRemove(draft.key) }
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Stepper("−", Modifier) { actions.onMinutes(draft.key, -5) }
-            Text("${draft.minutes}m", style = MaterialTheme.typography.titleMedium)
-            Stepper("+", Modifier) { actions.onMinutes(draft.key, 5) }
-
-            TextButton(onClick = { actions.onKind(draft.key, draft.kind.next()) }, modifier = Modifier.heightIn(min = 72.dp)) {
-                Text(draft.kind.name, style = MaterialTheme.typography.labelMedium, color = colorFor(draft.colorRole))
-            }
-            TextButton(onClick = { actions.onToggleFixed(draft.key) }, modifier = Modifier.heightIn(min = 72.dp)) {
-                Text(if (draft.fixed) "FIXED" else "FLOW", style = MaterialTheme.typography.labelMedium)
-            }
+        Row(
+            Modifier.fillMaxWidth().padding(top = 10.dp, start = 72.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Stepper(
+                value = "${draft.minutes} min",
+                onDown = { actions.onMinutes(draft.key, -5) },
+                onUp = { actions.onMinutes(draft.key, 5) }
+            )
+            ActionButton(
+                label = draft.kind.name,
+                tone = Tone.Tinted,
+                accent = accent,
+                height = 64.dp,
+                corner = 18.dp
+            ) { actions.onKind(draft.key, draft.kind.next()) }
+            ActionButton(
+                label = if (draft.fixed) "FIXED" else "FLOWS",
+                height = 64.dp,
+                corner = 18.dp
+            ) { actions.onToggleFixed(draft.key) }
             if (draft.fixed) {
-                Stepper("−", Modifier) { actions.onShiftStart(draft.key, -15) }
-                Text(formatClock(draft.startLocal ?: java.time.LocalTime.of(9, 0)), style = MaterialTheme.typography.titleMedium)
-                Stepper("+", Modifier) { actions.onShiftStart(draft.key, 15) }
+                Stepper(
+                    value = formatClock(draft.startLocal ?: LocalTime.of(9, 0)),
+                    onDown = { actions.onShiftStart(draft.key, -15) },
+                    onUp = { actions.onShiftStart(draft.key, 15) }
+                )
             }
         }
 
@@ -107,16 +124,27 @@ fun BlockRow(
             items = draft.items,
             onText = { itemKey, text -> actions.onItemText(draft.key, itemKey, text) },
             onRemove = { itemKey -> actions.onRemoveItem(draft.key, itemKey) },
-            onAdd = { actions.onAddItem(draft.key) }
+            onAdd = { actions.onAddItem(draft.key) },
+            modifier = Modifier.padding(start = 72.dp, top = 6.dp)
         )
     }
 }
 
 @Composable
-private fun Stepper(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = modifier.size(72.dp)) {
-        Text(label, style = MaterialTheme.typography.titleLarge)
+private fun Stepper(value: String, onDown: () -> Unit, onUp: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        ActionButton("−", Modifier.size(64.dp), height = 64.dp, corner = 18.dp, onClick = onDown)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = LabelPrimary,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+        ActionButton("+", Modifier.size(64.dp), height = 64.dp, corner = 18.dp, onClick = onUp)
     }
 }
 
 private fun BlockKind.next(): BlockKind = BlockKind.entries[(ordinal + 1) % BlockKind.entries.size]
+
+@Suppress("unused")
+private val labelSecondaryKeepsImportHonest = LabelSecondary
