@@ -18,6 +18,9 @@ val RoleMeal = Color(0xFFD9904B)
 val RoleAppointment = Color(0xFFD9584B)
 val RoleBuffer = Color(0xFF3A4350)
 val RoleNeutral = Color(0xFF6E7681)
+val RoleTeal = Color(0xFF3FB8AF)
+val RolePink = Color(0xFFE0629B)
+val RoleLime = Color(0xFF9ACD4E)
 
 fun colorFor(role: ColorRole): Color = when (role) {
     ColorRole.DEEP -> RoleDeep
@@ -26,8 +29,8 @@ fun colorFor(role: ColorRole): Color = when (role) {
     ColorRole.MEAL -> RoleMeal
     ColorRole.APPOINTMENT -> RoleAppointment
     ColorRole.BUFFER -> RoleBuffer
-    ColorRole.ACCENT_A -> RoleDeep
-    ColorRole.ACCENT_B -> RoleAdmin
-    ColorRole.ACCENT_C -> RoleMeal
+    ColorRole.ACCENT_A -> RoleTeal
+    ColorRole.ACCENT_B -> RolePink
+    ColorRole.ACCENT_C -> RoleLime
     ColorRole.NEUTRAL -> RoleNeutral
 }

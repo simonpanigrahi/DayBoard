@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
@@ -30,12 +31,14 @@ data class EditorActions(
     val onTitle: (Long, String) -> Unit,
     val onMinutes: (Long, Int) -> Unit,
     val onKind: (Long, BlockKind) -> Unit,
+    val onColor: (Long) -> Unit,
     val onToggleFixed: (Long) -> Unit,
     val onShiftStart: (Long, Long) -> Unit,
     val onAddItem: (Long) -> Unit,
     val onItemText: (Long, Long, String) -> Unit,
     val onRemoveItem: (Long, Long) -> Unit,
     val onReview: () -> Unit,
+    val onImport: () -> Unit,
     val onBack: () -> Unit,
     val onShiftDayStart: (Long) -> Unit,
     val onDayStartNow: () -> Unit
@@ -49,6 +52,7 @@ fun PlanEditorScreen(state: EditorUiState, actions: EditorActions, modifier: Mod
         modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .safeDrawingPadding()
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -56,6 +60,12 @@ fun PlanEditorScreen(state: EditorUiState, actions: EditorActions, modifier: Mod
             Text("TODAY'S PLAN", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             OutlinedButton(onClick = actions.onBack, modifier = Modifier.height(72.dp)) {
                 Text("BOARD", style = MaterialTheme.typography.labelMedium)
+            }
+            OutlinedButton(
+                onClick = actions.onImport,
+                modifier = Modifier.height(72.dp).padding(start = 12.dp)
+            ) {
+                Text("PASTE A DAY", style = MaterialTheme.typography.labelMedium)
             }
             OutlinedButton(
                 onClick = actions.onAdd,

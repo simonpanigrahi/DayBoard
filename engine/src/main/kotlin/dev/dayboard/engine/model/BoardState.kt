@@ -19,6 +19,8 @@ data class BoardState(
     val completed: List<CompletedBlock>,
     val dayTotals: DayTotals,
     val ribbon: List<RibbonSegment>,
+    /** The span the ribbon's fractions are measured across, so it can be labelled. */
+    val ribbonWindow: RibbonWindow,
     /** Where the "now" needle sits across the ribbon window, 0..1. */
     val nowFraction: Float,
     val nudge: Nudge?,
@@ -67,6 +69,11 @@ data class RibbonSegment(
     val endFraction: Float,
     val state: SegmentState
 )
+
+/** Minutes from midnight; the end may pass 1440 for a day that runs late. */
+data class RibbonWindow(val startMinute: Int, val endMinute: Int) {
+    val minutes: Int get() = endMinute - startMinute
+}
 
 enum class NudgeKind { REST_SUGGESTION, OVERRUN }
 

@@ -1,6 +1,7 @@
 package dev.dayboard.ui.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -16,6 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.model.BlockKind
@@ -36,7 +39,8 @@ fun BlockRow(
     Column(
         modifier
             .fillMaxWidth()
-            .background(if (dragging) colorFor(draft.kind.colorRole()).copy(alpha = 0.25f) else BoardSurface)
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (dragging) colorFor(draft.colorRole).copy(alpha = 0.3f) else BoardSurface)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -68,6 +72,14 @@ fun BlockRow(
                 textStyle = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
             )
+            TextButton(onClick = { actions.onColor(draft.key) }, modifier = Modifier.size(72.dp)) {
+                Row(
+                    Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(colorFor(draft.colorRole))
+                ) {}
+            }
             TextButton(onClick = { actions.onRemove(draft.key) }, modifier = Modifier.heightIn(min = 72.dp)) {
                 Text("DELETE", style = MaterialTheme.typography.labelMedium, color = BoardDim)
             }
@@ -79,7 +91,7 @@ fun BlockRow(
             Stepper("+", Modifier) { actions.onMinutes(draft.key, 5) }
 
             TextButton(onClick = { actions.onKind(draft.key, draft.kind.next()) }, modifier = Modifier.heightIn(min = 72.dp)) {
-                Text(draft.kind.name, style = MaterialTheme.typography.labelMedium, color = colorFor(draft.kind.colorRole()))
+                Text(draft.kind.name, style = MaterialTheme.typography.labelMedium, color = colorFor(draft.colorRole))
             }
             TextButton(onClick = { actions.onToggleFixed(draft.key) }, modifier = Modifier.heightIn(min = 72.dp)) {
                 Text(if (draft.fixed) "FIXED" else "FLOW", style = MaterialTheme.typography.labelMedium)

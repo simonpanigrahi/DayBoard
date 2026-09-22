@@ -334,4 +334,13 @@ class ResolveTest {
 
         assertEquals("Read paper", board("21:00", events, nowElapsed = ELAPSED0 + min(20)).startable?.block?.title)
     }
+
+    @Test
+    fun `the ribbon window covers the waking day, widened to fit the plan`() {
+        val window = board("10:30").ribbonWindow
+
+        assertEquals(6 * 60, window.startMinute)
+        assertEquals(23 * 60, window.endMinute)
+        assertEquals(1020, window.minutes)
+    }
 }

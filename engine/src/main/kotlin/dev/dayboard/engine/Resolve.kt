@@ -17,6 +17,7 @@ import dev.dayboard.engine.model.EventType
 import dev.dayboard.engine.model.Nudge
 import dev.dayboard.engine.model.NudgeKind
 import dev.dayboard.engine.model.RibbonSegment
+import dev.dayboard.engine.model.RibbonWindow
 import dev.dayboard.engine.model.SegmentState
 import dev.dayboard.engine.model.SessionEvent
 import java.time.Duration
@@ -81,6 +82,7 @@ fun resolve(
         dayTotals = totals(slots),
         ribbon = ribbon.segments,
         nowFraction = ribbon.needle,
+        ribbonWindow = ribbon.window,
         nudge = active?.let { nudgeFor(it, settings) },
         conflicts = extended.conflicts
     )
@@ -160,7 +162,7 @@ private fun totals(slots: List<Slot>) = DayTotals(
     confidence = if (slots.any { it.actuals.confidence == Confidence.PARTIAL }) Confidence.PARTIAL else Confidence.FULL
 )
 
-private data class Ribbon(val segments: List<RibbonSegment>, val needle: Float)
+private data class Ribbon(val segments: List<RibbonSegment>, val needle: Float, val window: RibbonWindow)
 
 private fun ribbon(
     slots: List<Slot>,
@@ -170,11 +172,11 @@ private fun ribbon(
     date: LocalDate,
     settings: ResolveSettings
 ): Ribbon {
-    if (slots.isEmpty()) return Ribbon(emptyList(), 0f)
+    if (slots.isEmpty()) return Ribbon(emptyList(), 0f, RibbonWindow(0, 0))
     val windowStart = minOf(settings.ribbonStart.minutesFromMidnight(), slots.minOf { it.resolved.startMinute })
     val windowEnd = maxOf(settings.ribbonEnd.minutesFromMidnight(), slots.maxOf { it.resolved.endMinute })
     val span = (windowEnd - windowStart).toFloat()
-    if (span <= 0f) return Ribbon(emptyList(), 0f)
+    if (span <= 0f) return Ribbon(emptyList(), 0f, RibbonWindow(windowStart, windowEnd))
 
     val segments = slots.map { slot ->
         RibbonSegment(
@@ -190,7 +192,7 @@ private fun ribbon(
         )
     }
     val minutesIntoWindow = Duration.between(windowStart.instantOn(date, zone), now).toMinutes()
-    return Ribbon(segments, (minutesIntoWindow / span).coerceIn(0f, 1f))
+    return Ribbon(segments, (minutesIntoWindow / span).coerceIn(0f, 1f), RibbonWindow(windowStart, windowEnd))
 }
 
 private fun nudgeFor(active: ActiveBlock, settings: ResolveSettings): Nudge? = when {

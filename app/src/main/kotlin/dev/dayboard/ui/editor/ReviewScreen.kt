@@ -1,6 +1,8 @@
 package dev.dayboard.ui.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -17,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.dayboard.engine.ResolvedPlan
 import dev.dayboard.engine.layout.Adjustment
@@ -31,6 +35,7 @@ import dev.dayboard.ui.theme.colorFor
 @Composable
 fun ReviewScreen(
     plan: ResolvedPlan,
+    warnings: List<String> = emptyList(),
     onCommit: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -42,6 +47,7 @@ fun ReviewScreen(
         modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .safeDrawingPadding()
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -62,6 +68,10 @@ fun ReviewScreen(
             color = if (hasBuffer) BoardDim else BoardAmber
         )
 
+        warnings.forEach { warning ->
+            Text("\u26a0 $warning", style = MaterialTheme.typography.bodyMedium, color = BoardAmber)
+        }
+
         plan.conflicts.forEach { conflict ->
             Text("⚠ ${conflict.message}", style = MaterialTheme.typography.bodyMedium, color = BoardAmber)
         }
@@ -69,6 +79,13 @@ fun ReviewScreen(
         LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(plan.blocks, key = { it.block.id.takeIf { id -> id != 0L } ?: it.startMinute }) { resolved ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier
+                            .padding(end = 18.dp)
+                            .size(18.dp)
+                            .clip(CircleShape)
+                            .background(colorFor(resolved.block.colorRole))
+                    ) {}
                     Text(
                         text = "${formatClock(resolved.start)}–${formatClock(resolved.end)}",
                         style = MaterialTheme.typography.bodyLarge,

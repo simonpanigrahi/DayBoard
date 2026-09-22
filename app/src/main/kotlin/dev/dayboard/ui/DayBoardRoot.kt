@@ -5,8 +5,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,38 +15,40 @@ import dev.dayboard.ui.board.BoardActions
 import dev.dayboard.ui.board.BoardScreen
 import dev.dayboard.ui.board.BoardViewModel
 import dev.dayboard.ui.editor.EditorActions
+import dev.dayboard.ui.editor.ImportScreen
 import dev.dayboard.ui.editor.PlanEditorScreen
 import dev.dayboard.ui.editor.PlanEditorViewModel
 import dev.dayboard.ui.editor.ReviewScreen
 
-private enum class Screen { BOARD, EDITOR, REVIEW }
+private enum class Screen { BOARD, IMPORT, EDITOR, REVIEW }
 
-/** Two destinations and a review step, held in plain state. A nav library would be overkill. */
+/** Board, one input box, editor and review, held in plain state. */
 @Composable
 fun DayBoardRoot(container: AppContainer) {
     var screen by rememberSaveable { mutableStateOf(Screen.BOARD) }
-    // Bumped on every entry so the editor reloads the committed plan rather than
+    // Bumped on every entry so the plan screens reload the committed day rather than
     // resuming a draft the user walked away from.
     var session by rememberSaveable { mutableIntStateOf(0) }
 
-    when (screen) {
-        Screen.BOARD -> BoardRoute(container) {
-            session++
-            screen = Screen.EDITOR
-        }
-
-        Screen.EDITOR, Screen.REVIEW -> EditorRoute(
+    if (screen == Screen.BOARD) {
+        BoardRoute(
             container = container,
-            session = session,
-            reviewing = screen == Screen.REVIEW,
-            onScreen = { reviewing -> screen = if (reviewing) Screen.REVIEW else Screen.EDITOR },
-            onLeave = { screen = Screen.BOARD }
+            onEdit = {
+                session++
+                screen = Screen.EDITOR
+            },
+            onImport = {
+                session++
+                screen = Screen.IMPORT
+            }
         )
+    } else {
+        PlanRoute(container, session, screen) { screen = it }
     }
 }
 
 @Composable
-private fun BoardRoute(container: AppContainer, onEdit: () -> Unit) {
+private fun BoardRoute(container: AppContainer, onEdit: () -> Unit, onImport: () -> Unit) {
     KeepScreenOn()
     val board: BoardViewModel = viewModel(factory = BoardViewModel.factory(container))
     val state by board.state.collectAsStateWithLifecycle()
@@ -61,32 +63,40 @@ private fun BoardRoute(container: AppContainer, onEdit: () -> Unit) {
             onEndBreak = board::endBreak,
             onExtend = { board.extend(5) },
             onDone = board::doneAndAdvance,
+            onSkip = board::skip,
             onToggleItem = board::toggleItem,
-            onEdit = onEdit
+            onEdit = onEdit,
+            onImport = onImport
         )
     )
 }
 
 @Composable
-private fun EditorRoute(
+private fun PlanRoute(
     container: AppContainer,
     session: Int,
-    reviewing: Boolean,
-    onScreen: (Boolean) -> Unit,
-    onLeave: () -> Unit
+    screen: Screen,
+    onScreen: (Screen) -> Unit
 ) {
     val editor: PlanEditorViewModel =
         viewModel(key = "editor-$session", factory = PlanEditorViewModel.factory(container))
     val state by editor.state.collectAsStateWithLifecycle()
 
-    if (reviewing) {
-        ReviewScreen(
-            plan = state.preview,
-            onCommit = { editor.commit(onLeave) },
-            onBack = { onScreen(false) }
+    when (screen) {
+        Screen.IMPORT -> ImportScreen(
+            errors = state.importErrors,
+            onParse = { text -> editor.importText(text) { onScreen(Screen.REVIEW) } },
+            onBack = { onScreen(Screen.BOARD) }
         )
-    } else {
-        PlanEditorScreen(
+
+        Screen.REVIEW -> ReviewScreen(
+            plan = state.preview,
+            warnings = state.importWarnings,
+            onCommit = { editor.commit { onScreen(Screen.BOARD) } },
+            onBack = { onScreen(Screen.EDITOR) }
+        )
+
+        else -> PlanEditorScreen(
             state = state,
             actions = EditorActions(
                 onAdd = editor::addBlock,
@@ -95,13 +105,15 @@ private fun EditorRoute(
                 onTitle = editor::setTitle,
                 onMinutes = editor::changeMinutes,
                 onKind = editor::setKind,
+                onColor = editor::cycleColor,
                 onToggleFixed = editor::toggleFixed,
                 onShiftStart = editor::shiftStart,
                 onAddItem = editor::addItem,
                 onItemText = editor::setItemText,
                 onRemoveItem = editor::removeItem,
-                onReview = { onScreen(true) },
-                onBack = onLeave,
+                onReview = { onScreen(Screen.REVIEW) },
+                onImport = { onScreen(Screen.IMPORT) },
+                onBack = { onScreen(Screen.BOARD) },
                 onShiftDayStart = editor::shiftDayStart,
                 onDayStartNow = editor::startDayNow
             )
@@ -110,9 +122,9 @@ private fun EditorRoute(
 }
 
 /**
- * The board is meant to sit on a stand and stay readable, so the window keeps the
- * screen on while it is showing. A WAKE_LOCK would need a permission and would outlive
- * the screen; this flag is scoped to the view and releases itself.
+ * The board sits on a stand and has to stay readable, so the window keeps the screen on
+ * while it shows. A WAKE_LOCK would need a permission and would outlive the screen;
+ * this flag is scoped to the view and releases itself.
  */
 @Composable
 private fun KeepScreenOn() {

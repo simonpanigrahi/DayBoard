@@ -78,9 +78,16 @@ class BoardViewModel(
 
     private val currentBlockId: Long? get() = state.value.board?.current?.resolved?.block?.id
 
+    /** What START acts on: the engine decides, including when the day has run late. */
+    private val startableBlockId: Long? get() = state.value.board?.startable?.block?.id
+
     fun startCurrent() {
-        val target = currentBlockId ?: state.value.board?.next?.block?.id ?: return
-        append(EventType.BLOCK_START, target)
+        append(EventType.BLOCK_START, startableBlockId ?: return)
+    }
+
+    /** Not doing this one. It closes without pretending any of it was worked. */
+    fun skip() {
+        append(EventType.BLOCK_SKIP, currentBlockId ?: startableBlockId ?: return)
     }
 
     fun pause() = onCurrentBlock(EventType.PAUSE)

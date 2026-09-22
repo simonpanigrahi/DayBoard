@@ -12,6 +12,8 @@ import dev.dayboard.data.repo.SettingsRepository
 import dev.dayboard.engine.ResolvedPlan
 import dev.dayboard.engine.model.BlockKind
 import dev.dayboard.engine.model.ChecklistItem
+import dev.dayboard.engine.parse.ImportResult
+import dev.dayboard.engine.parse.importPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,9 @@ import java.time.ZoneId
 data class EditorUiState(
     val loaded: Boolean = false,
     val blocks: List<BlockDraft> = emptyList(),
-    val dayStart: LocalTime = SettingsRepository.DEFAULT_DAY_START
+    val dayStart: LocalTime = SettingsRepository.DEFAULT_DAY_START,
+    val importErrors: List<String> = emptyList(),
+    val importWarnings: List<String> = emptyList()
 ) {
     /** The sweep run over the draft, which is what Review renders. */
     val preview: ResolvedPlan
@@ -76,6 +80,45 @@ class PlanEditorViewModel(
         viewModelScope.launch { settings.setDayStart(now) }
     }
 
+    /**
+     * One box, either grammar. On success the draft is replaced wholesale and the user
+     * lands in Review, which is still the only way anything reaches the plan tables.
+     */
+    fun importText(text: String, onParsed: () -> Unit) {
+        when (val result = importPlan(text)) {
+            is ImportResult.Ok -> {
+                val blocks = result.draft.blocks.map(BlockDraft::of)
+                // A day of flow blocks pasted at four in the afternoon means "from now",
+                // not "from this morning", so the chain is re-anchored and said so.
+                val now = LocalTime.now(zone).withSecond(0).withNano(0)
+                val reanchor = blocks.none { it.fixed } && _state.value.dayStart.isBefore(now.minusMinutes(30))
+                val dayStart = if (reanchor) now else _state.value.dayStart
+                if (reanchor) viewModelScope.launch { settings.setDayStart(now) }
+
+                _state.update {
+                    it.copy(
+                        blocks = blocks,
+                        dayStart = dayStart,
+                        importErrors = emptyList(),
+                        importWarnings = result.draft.warnings.map { warning -> warning.message } +
+                            listOfNotNull("Day start moved to $now so the day runs from here".takeIf { reanchor })
+                    )
+                }
+                onParsed()
+            }
+
+            is ImportResult.Failed -> _state.update {
+                it.copy(
+                    importErrors = result.errors.map { error ->
+                        error.line?.let { line -> "Line $line: ${error.message}" } ?: error.message
+                    }
+                )
+            }
+        }
+    }
+
+    fun cycleColor(key: Long) = editBlock(key) { it.copy(colorRole = it.colorRole.nextColor()) }
+
     fun addBlock() = edit { it + BlockDraft.new() }
 
     fun removeBlock(key: Long) = edit { blocks -> blocks.filterNot { it.key == key } }
@@ -90,7 +133,8 @@ class PlanEditorViewModel(
     fun changeMinutes(key: Long, delta: Int) =
         editBlock(key) { it.copy(minutes = (it.minutes + delta).coerceIn(5, 8 * 60)) }
 
-    fun setKind(key: Long, kind: BlockKind) = editBlock(key) { it.copy(kind = kind) }
+    fun setKind(key: Long, kind: BlockKind) =
+        editBlock(key) { it.copy(kind = kind, colorRole = defaultColorFor(kind, it.tag)) }
 
     fun toggleFixed(key: Long) = editBlock(key) { draft ->
         draft.copy(
