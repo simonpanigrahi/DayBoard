@@ -1,6 +1,7 @@
 package dev.dayboard.engine
 
 import dev.dayboard.engine.fold.checkedItems
+import dev.dayboard.engine.fold.extendMinutes
 import dev.dayboard.engine.fold.foldEvents
 import dev.dayboard.engine.layout.MINUTES_PER_DAY
 import dev.dayboard.engine.layout.ResolvedBlock
@@ -40,9 +41,16 @@ fun resolve(
     nowElapsed: Long? = null,
     settings: ResolveSettings = ResolveSettings()
 ): BoardState {
-    val byBlock = events.filter { it.blockId != null }.groupBy { it.blockId }
-    val slots = plan.blocks.map { resolved ->
-        slotFor(resolved, byBlock[resolved.block.id].orEmpty(), plan, zone, nowElapsed)
+    val byBlock = events.filter { it.blockId != null }.groupBy { checkNotNull(it.blockId) }
+    // BLOCK_EXTEND re-runs the sweep rather than just padding a number, so the tail of
+    // the day moves with the extension while fixed anchors stay pinned.
+    val extended = plan.withExtensions(
+        byBlock.mapValues { (_, blockEvents) ->
+            blockEvents.filter { it.type == EventType.BLOCK_EXTEND }.sumOf { extendMinutes(it.meta) }
+        }.filterValues { it > 0 }
+    )
+    val slots = extended.blocks.map { resolved ->
+        slotFor(resolved, byBlock[resolved.block.id].orEmpty(), extended, zone, nowElapsed)
     }
 
     val current = slots.firstOrNull { it.started && !it.closed }
@@ -55,6 +63,7 @@ fun resolve(
     }
 
     val active = current?.toActiveBlock(now)
+    val ribbon = ribbon(slots, current, now, zone, extended.date, settings)
     return BoardState(
         clock = ZonedDateTime.ofInstant(now, zone),
         current = active,
@@ -63,9 +72,10 @@ fun resolve(
         completed = slots.filter { it != current && (it.closed || !it.endAt.isAfter(now)) }
             .map { CompletedBlock(it.resolved, it.actuals, it.endedAt, it.skipped) },
         dayTotals = totals(slots),
-        ribbon = ribbon(slots, current, now, settings),
+        ribbon = ribbon.segments,
+        nowFraction = ribbon.needle,
         nudge = active?.let { nudgeFor(it, settings) },
-        conflicts = plan.conflicts
+        conflicts = extended.conflicts
     )
 }
 
@@ -143,19 +153,23 @@ private fun totals(slots: List<Slot>) = DayTotals(
     confidence = if (slots.any { it.actuals.confidence == Confidence.PARTIAL }) Confidence.PARTIAL else Confidence.FULL
 )
 
+private data class Ribbon(val segments: List<RibbonSegment>, val needle: Float)
+
 private fun ribbon(
     slots: List<Slot>,
     current: Slot?,
     now: Instant,
+    zone: ZoneId,
+    date: LocalDate,
     settings: ResolveSettings
-): List<RibbonSegment> {
-    if (slots.isEmpty()) return emptyList()
+): Ribbon {
+    if (slots.isEmpty()) return Ribbon(emptyList(), 0f)
     val windowStart = minOf(settings.ribbonStart.minutesFromMidnight(), slots.minOf { it.resolved.startMinute })
     val windowEnd = maxOf(settings.ribbonEnd.minutesFromMidnight(), slots.maxOf { it.resolved.endMinute })
     val span = (windowEnd - windowStart).toFloat()
-    if (span <= 0f) return emptyList()
+    if (span <= 0f) return Ribbon(emptyList(), 0f)
 
-    return slots.map { slot ->
+    val segments = slots.map { slot ->
         RibbonSegment(
             blockId = slot.resolved.block.id,
             colorRole = slot.resolved.block.colorRole,
@@ -168,6 +182,8 @@ private fun ribbon(
             }
         )
     }
+    val minutesIntoWindow = Duration.between(windowStart.instantOn(date, zone), now).toMinutes()
+    return Ribbon(segments, (minutesIntoWindow / span).coerceIn(0f, 1f))
 }
 
 private fun nudgeFor(active: ActiveBlock, settings: ResolveSettings): Nudge? = when {

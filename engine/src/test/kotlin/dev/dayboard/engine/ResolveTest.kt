@@ -53,7 +53,8 @@ class ResolveTest {
         hhmm: String,
         elapsedMinutes: Long,
         refId: Long? = null,
-        id: Long = elapsedMinutes
+        id: Long = elapsedMinutes,
+        meta: String? = null
     ) = SessionEvent(
         id = id,
         blockId = blockId,
@@ -61,7 +62,8 @@ class ResolveTest {
         wallAt = at(hhmm),
         elapsedRealtime = ELAPSED0 + min(elapsedMinutes),
         bootId = BOOT_A,
-        refId = refId
+        refId = refId,
+        meta = meta
     )
 
     /** The plan restated independently of the layout sweep, as a schedule the test owns. */
@@ -257,5 +259,45 @@ class ResolveTest {
         assertEquals(zone, state.clock.zone)
         assertEquals(14, state.clock.hour)
         assertEquals(32, state.clock.minute)
+    }
+
+    @Test
+    fun `the now needle sits proportionally across the ribbon window`() {
+        // 06:00 to 23:00 is the window, so 10:30 is 270 of its 1020 minutes.
+        assertEquals(270f / 1020f, board("10:30").nowFraction)
+        assertEquals(0f, board("05:00").nowFraction)
+        assertEquals(1f, board("23:30").nowFraction)
+    }
+
+    @Test
+    fun `extending the running block moves the tail and clears the overrun`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 1, hhmm = "08:00", elapsedMinutes = 0),
+            event(EventType.BLOCK_EXTEND, blockId = 1, hhmm = "08:30", elapsedMinutes = 30, id = 31, meta = "5")
+        )
+
+        val state = board("08:33", events, nowElapsed = ELAPSED0 + min(33))
+
+        val current = assertNotNull(state.current)
+        assertEquals("Email", current.resolved.block.title)
+        assertEquals(35, current.resolved.minutes)
+        assertEquals(min(2), current.remainingMs)
+        assertEquals(0, current.overrunMs)
+        assertNull(state.nudge)
+        assertEquals(t("08:35"), state.next?.start)
+    }
+
+    @Test
+    fun `an extension leaves a later anchor pinned where it was`() {
+        val events = listOf(
+            event(EventType.BLOCK_START, blockId = 2, hhmm = "08:30", elapsedMinutes = 0),
+            event(EventType.BLOCK_EXTEND, blockId = 2, hhmm = "09:10", elapsedMinutes = 40, id = 41, meta = "15")
+        )
+
+        val state = board("09:15", events, nowElapsed = ELAPSED0 + min(45))
+
+        assertEquals("Read paper", state.current?.resolved?.block?.title)
+        assertEquals("Class", state.next?.block?.title)
+        assertEquals(t("10:00"), state.next?.start)
     }
 }

@@ -103,3 +103,11 @@ private fun Set<Long>.after(event: SessionEvent): Set<Long> {
 internal fun checkedItems(events: List<SessionEvent>): Set<Long> =
     events.sortedWith(compareBy({ it.wallAt }, { it.id }))
         .fold(emptySet<Long>()) { checked, event -> checked.after(event) }
+
+/**
+ * Minutes granted by a BLOCK_EXTEND, read leniently from its meta: the app writes "5"
+ * today and may well write {"minutes":5} later, and neither should need a JSON parser
+ * on the engine's dependency-free side.
+ */
+internal fun extendMinutes(meta: String?): Int =
+    meta?.dropWhile { !it.isDigit() }?.takeWhile { it.isDigit() }?.toIntOrNull() ?: 0

@@ -16,6 +16,20 @@ data class ResolvedPlan(
     val conflicts: List<Conflict> = emptyList(),
     val checklists: Map<Long, List<ChecklistItem>> = emptyMap()
 ) {
+    /**
+     * Re-runs the sweep with extra minutes granted to some blocks. Only blocks after an
+     * extended one move, because the cursor ahead of it is untouched, which is what
+     * keeps an extension from re-laying-out the part of the day already lived.
+     */
+    fun withExtensions(extraMinutes: Map<Long, Int>): ResolvedPlan {
+        if (extraMinutes.isEmpty()) return this
+        val extended = blocks.map { it.block }.map { block ->
+            val extra = extraMinutes[block.id] ?: 0
+            if (extra > 0) block.copy(plannedMinutes = block.plannedMinutes + extra) else block
+        }
+        return from(date, dayStart, extended, checklists)
+    }
+
     companion object {
         fun from(
             date: LocalDate,

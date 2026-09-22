@@ -13,6 +13,8 @@ data class BoardState(
     val completed: List<CompletedBlock>,
     val dayTotals: DayTotals,
     val ribbon: List<RibbonSegment>,
+    /** Where the "now" needle sits across the ribbon window, 0..1. */
+    val nowFraction: Float,
     val nudge: Nudge?,
     val conflicts: List<Conflict>
 )
