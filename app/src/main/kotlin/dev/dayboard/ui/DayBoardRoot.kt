@@ -2,13 +2,20 @@ package dev.dayboard.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,7 +39,18 @@ fun DayBoardRoot(container: AppContainer) {
     // resuming a draft the user walked away from.
     var session by rememberSaveable { mutableIntStateOf(0) }
 
-    Crossfade(targetState = screen, animationSpec = tween(220), label = "screen") { current ->
+    Crossfade(targetState = screen, animationSpec = tween(FADE_MS), label = "screen") { current ->
+        // During the fade both screens are drawn and both would answer a tap. Review's
+        // Commit lands exactly where Fill the day's Build it was, so one tap could write
+        // a plan without the review it is supposed to pass through. Only the screen that
+        // has settled takes input.
+        var settled by remember(current) { mutableStateOf(false) }
+        LaunchedEffect(current) {
+            delay(SETTLE_MS)
+            settled = true
+        }
+
+        Box(if (current == screen && settled) Modifier else Modifier.swallowPointerInput()) {
         if (current == Screen.BOARD) {
             BoardRoute(
                 container = container,
@@ -47,6 +65,19 @@ fun DayBoardRoot(container: AppContainer) {
             )
         } else {
             PlanRoute(container, session, current) { screen = it }
+        }
+        }
+    }
+}
+
+private const val FADE_MS = 220
+private const val SETTLE_MS = 260L
+
+/** Eats every pointer event before anything under it can see one. */
+private fun Modifier.swallowPointerInput(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
         }
     }
 }

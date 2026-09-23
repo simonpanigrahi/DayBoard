@@ -38,7 +38,7 @@ val BoardTypography = Typography(
         letterSpacing = (-0.045).em, fontFeatureSettings = TABULAR, lineHeightStyle = Trim
     ),
     displayMedium = TextStyle(
-        fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 76.sp, lineHeight = 80.sp,
+        fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 92.sp, lineHeight = 96.sp,
         letterSpacing = (-0.035).em, fontFeatureSettings = TABULAR, lineHeightStyle = Trim
     ),
     displaySmall = TextStyle(
@@ -46,7 +46,7 @@ val BoardTypography = Typography(
         letterSpacing = (-0.03).em, fontFeatureSettings = TABULAR
     ),
     headlineLarge = TextStyle(
-        fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 46.sp, lineHeight = 52.sp,
+        fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, lineHeight = 46.sp,
         letterSpacing = (-0.022).em
     ),
     headlineMedium = TextStyle(

@@ -116,14 +116,25 @@ class PlanEditorViewModel(
         when (val result = importPlan(text)) {
             is ImportResult.Ok -> {
                 val blocks = result.draft.blocks.map(BlockDraft::of)
+                val current = _state.value.dayStart
+                val now = LocalTime.now(zone).withSecond(0).withNano(0)
+
+                // An anchor earlier than the day's start belongs to the next morning, so a
+                // 09:00 block imported into a day that starts at 16:55 would silently land
+                // tomorrow. The plan's own earliest anchor wins instead.
+                val earliestAnchor = blocks.filter { it.fixed }.mapNotNull { it.startLocal }.minOrNull()
                 // A day of flow blocks pasted at four in the afternoon means "from now",
                 // not "from this morning", so the chain is re-anchored and said so.
-                val now = LocalTime.now(zone).withSecond(0).withNano(0)
-                val reanchor = _state.value.isToday &&
+                val reanchorToNow = _state.value.isToday &&
                     blocks.none { it.fixed } &&
-                    _state.value.dayStart.isBefore(now.minusMinutes(30))
-                val dayStart = if (reanchor) now else _state.value.dayStart
-                if (reanchor) viewModelScope.launch { settings.setDayStart(now) }
+                    current.isBefore(now.minusMinutes(30))
+
+                val dayStart = when {
+                    earliestAnchor != null && earliestAnchor.isBefore(current) -> earliestAnchor
+                    reanchorToNow -> now
+                    else -> current
+                }
+                if (dayStart != current) viewModelScope.launch { settings.setDayStart(dayStart) }
 
                 _state.update {
                     it.copy(
@@ -131,7 +142,13 @@ class PlanEditorViewModel(
                         dayStart = dayStart,
                         importErrors = emptyList(),
                         importWarnings = result.draft.warnings.map { warning -> warning.message } +
-                            listOfNotNull("Day start moved to $now so the day runs from here".takeIf { reanchor })
+                            listOfNotNull(
+                                when {
+                                    dayStart == current -> null
+                                    reanchorToNow -> "Day start moved to $dayStart so the day runs from here"
+                                    else -> "Day start moved to $dayStart to fit the first fixed block"
+                                }
+                            )
                     )
                 }
                 onParsed()

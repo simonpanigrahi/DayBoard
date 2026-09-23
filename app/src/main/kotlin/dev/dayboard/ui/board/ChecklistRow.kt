@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -29,7 +30,10 @@ import dev.dayboard.ui.theme.BoardSurfaceHigh
 import dev.dayboard.ui.theme.LabelPrimary
 import dev.dayboard.ui.theme.LabelTertiary
 
-/** One tap at a 72dp target ticks an item, and the tick is an event, not a field. */
+/**
+ * The pill is drawn small so it stays subordinate to the countdown, but the row around
+ * it keeps the full 72dp target, so what you hit is bigger than what you see.
+ */
 @Composable
 fun ChecklistRow(
     items: List<ChecklistItem>,
@@ -56,28 +60,32 @@ fun ChecklistRow(
                 )
             }
             .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEach { item ->
             val checked = item.id in checkedIds
-            Row(
-                modifier = Modifier
-                    .height(72.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(if (checked) accent.copy(alpha = 0.14f) else BoardSurfaceHigh)
-                    .clickable { onToggle(item.id) }
-                    .padding(horizontal = 22.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            Box(
+                modifier = Modifier.height(72.dp).clickable { onToggle(item.id) },
+                contentAlignment = Alignment.Center
             ) {
-                CheckboxGlyph(tint = if (checked) accent else LabelTertiary, checked = checked, size = 24.dp)
-                Text(
-                    text = item.text,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (checked) LabelTertiary else LabelPrimary,
-                    maxLines = 1
-                )
+                Row(
+                    modifier = Modifier
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(if (checked) accent.copy(alpha = 0.16f) else BoardSurfaceHigh)
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(11.dp)
+                ) {
+                    CheckboxGlyph(tint = if (checked) accent else LabelTertiary, checked = checked, size = 19.dp)
+                    Text(
+                        text = item.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (checked) LabelTertiary else LabelPrimary,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

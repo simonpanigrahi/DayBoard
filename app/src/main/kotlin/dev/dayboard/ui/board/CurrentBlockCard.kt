@@ -3,7 +3,6 @@ package dev.dayboard.ui.board
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -48,43 +47,47 @@ fun CurrentBlockCard(
     val fraction = remember { mutableFloatStateOf(0f) }
     SideEffect { fraction.floatValue = active.progress }
 
-    Panel(modifier, accent = accent) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Panel(modifier, accent = accent, padding = 24.dp) {
+        Column(Modifier.fillMaxSize()) {
             EyebrowRow(
                 label = if (active.paused) "PAUSED" else "NOW",
                 labelColor = if (active.paused) BoardAmber else accent,
                 detail = window(active.resolved) + doneCount(checklist, active.checkedItemIds)
             )
 
-            Spacer(Modifier.weight(0.7f))
-
-            Text(
-                text = active.resolved.block.title,
-                style = MaterialTheme.typography.headlineLarge,
-                color = LabelPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Row(verticalAlignment = Alignment.Bottom) {
+            // The title and countdown take whatever is left. Everything below them is
+            // measured first, so the checklist keeps its full 72dp targets instead of
+            // being quietly squeezed by a card that is one line too full.
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
-                    text = if (overrun) "+${formatCountdown(active.overrunMs)}" else formatCountdown(active.remainingMs),
-                    style = MaterialTheme.typography.displayMedium,
-                    color = if (overrun) BoardAmber else LabelPrimary
+                    text = active.resolved.block.title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = LabelPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = if (overrun) "over" else "left",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = LabelSecondary,
-                    modifier = Modifier.padding(start = 14.dp, bottom = 12.dp)
-                )
+
+                Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = if (overrun) "+${formatCountdown(active.overrunMs)}" else formatCountdown(active.remainingMs),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = if (overrun) BoardAmber else LabelPrimary
+                    )
+                    Text(
+                        text = if (overrun) "over" else "left",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = LabelSecondary,
+                        modifier = Modifier.padding(start = 14.dp, bottom = 12.dp)
+                    )
+                }
             }
-
-            Spacer(Modifier.weight(1f))
 
             ProgressBar(progress = fraction, color = accent)
 
-            ChecklistRow(checklist, active.checkedItemIds, accent, onToggleItem, Modifier.padding(top = 14.dp))
+            ChecklistRow(checklist, active.checkedItemIds, accent, onToggleItem, Modifier.padding(top = 12.dp))
         }
     }
 }
@@ -98,35 +101,37 @@ private fun ReadyCard(
     modifier: Modifier = Modifier
 ) {
     val accent = block?.let { colorFor(it.block.colorRole) } ?: LabelTertiary
-    Panel(modifier, accent = block?.let { accent }) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Panel(modifier, accent = block?.let { accent }, padding = 24.dp) {
+        Column(Modifier.fillMaxSize()) {
             EyebrowRow(
                 label = if (block == null) "DAY DONE" else "READY",
                 labelColor = accent,
                 detail = block?.let { window(it) + doneCount(checklist, checkedIds) }.orEmpty()
             )
 
-            Spacer(Modifier.weight(0.7f))
-
-            Text(
-                text = block?.block?.title ?: "Nothing left to run",
-                style = MaterialTheme.typography.headlineLarge,
-                color = if (block == null) LabelSecondary else LabelPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            if (block != null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
-                    text = "Press start when you begin",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = LabelSecondary
+                    text = block?.block?.title ?: "Nothing left to run",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = if (block == null) LabelSecondary else LabelPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+
+                if (block != null) {
+                    Text(
+                        text = "Press start when you begin",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = LabelSecondary,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
+                }
             }
 
-            Spacer(Modifier.weight(1f))
-
-            ChecklistRow(checklist, checkedIds, accent, onToggleItem)
+            ChecklistRow(checklist, checkedIds, accent, onToggleItem, Modifier.padding(top = 12.dp))
         }
     }
 }
